@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0e142e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="云上人间">
+<title>云上人间 · 仙缘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2a2238; --paper:#fbf6ea; --paper2:#f3ead6; --line:#e0cfa3;
+    --gold:#c9a24e; --gold2:#e8cf8a; --ver:#b23a2e; --ver2:#8f2a22;
+    --navy:rgba(12,18,44,.74); --txt:#f4e6c4; --muted:#b9a984;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;overflow:hidden;background:#060b26;color:var(--ink);
+    font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+  #sky{position:fixed;inset:0;z-index:0}
+  #app{position:relative;z-index:1;height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+
+  .frame{background:var(--navy);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--txt);border-radius:6px;
+    border:1px solid rgba(201,162,78,.6);box-shadow:inset 0 0 0 3px rgba(12,18,44,.55),inset 0 0 0 4px rgba(201,162,78,.22),0 10px 28px rgba(0,0,0,.35)}
+
+  /* HUD */
+  .hud{margin:10px 12px 0;padding:10px 12px}
+  .hud-row{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px;white-space:nowrap}
+  .hud-row .btns{display:flex;gap:5px}
+  .hud-row b{font-size:15px;letter-spacing:.06em;color:var(--gold2)}
+  .chip{border:1px solid var(--gold);color:var(--gold2);padding:1px 6px;border-radius:3px;font-size:12px;font-weight:600;letter-spacing:.1em}
+  .bars{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:8px}
+  .bar{font-size:12px;color:var(--muted);letter-spacing:.1em}
+  .bar .track{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;margin-top:4px;border:1px solid rgba(201,162,78,.25)}
+  .bar .fill{height:100%;transition:width .5s}
+  .seal-btn{border:1px solid var(--gold);background:transparent;color:var(--gold2);border-radius:50%;width:32px;height:32px;padding:0;font-family:inherit;font-size:15px;font-weight:900;cursor:pointer}
+
+  /* Scene */
+  #scene{flex:1;position:relative;min-height:220px}
+  #chars{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;align-items:flex-end;gap:0}
+  .char .nm{position:relative;left:-14px}
+  .char .bubble{left:40%}
+  .char{position:relative;text-align:center}
+  .fig{width:140px;height:182px;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.28))}
+  .char .nm{display:inline-block;margin-top:2px;font-size:12px;color:var(--gold2);background:rgba(12,18,44,.65);border:1px solid rgba(201,162,78,.5);padding:0 8px;border-radius:3px;letter-spacing:.2em}
+  .char .emo{position:absolute;top:8px;left:84px;width:26px;height:26px;background:var(--ver);color:#fff;border:1px solid var(--gold2);border-radius:4px;
+    font-size:15px;font-weight:900;display:flex;align-items:center;justify-content:center;transform:rotate(-6deg);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .char.ta.angry .fig{animation:shake .4s infinite}
+  .char.ta.happy .fig,.char.ta.shy .fig{animation:float 3s ease-in-out infinite}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  .bubble{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--paper);color:var(--ink);border:1px solid var(--gold);
+    padding:8px 12px;border-radius:6px;font-size:14px;width:max-content;max-width:210px;box-shadow:0 4px 14px rgba(0,0,0,.25);
+    opacity:0;transition:opacity .4s;pointer-events:none;line-height:1.6;z-index:2}
+  .bubble.show{opacity:1}
+  .bubble::after{content:"";position:absolute;top:100%;left:50%;margin-left:-6px;border:6px solid transparent;border-top-color:var(--gold)}
+  #pet{position:absolute;bottom:10px;font-size:28px;animation:float 2s infinite;display:none}
+
+  /* 背景音乐小窗 */
+  #music{position:absolute;top:8px;right:12px;width:128px;border:1px solid var(--gold);border-radius:4px;overflow:hidden;background:#000;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);transition:opacity .3s}
+  #music.off{opacity:0;pointer-events:none}
+  #music iframe{display:block;width:128px;height:72px;border:0}
+  #music .cap{cursor:pointer;font-size:10px;color:var(--gold2);background:rgba(12,18,44,.85);padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seal-btn.muted{opacity:.45;text-decoration:line-through}
+
+  /* Panel */
+  .panel{margin:0 12px 12px;padding:12px;max-height:46vh;display:flex;flex-direction:column}
+  #actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .act{border:1px solid rgba(201,162,78,.45);border-radius:6px;padding:8px 4px;min-height:62px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.1em;color:var(--txt);
+    background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.01));cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:transform .1s}
+  .act:active{transform:scale(.95)}
+  .act .ic{width:28px;height:28px;border:1px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:var(--gold2);letter-spacing:0}
+  .act.hl{background:linear-gradient(180deg,#c2452f,#8f2a22);border-color:var(--gold2)}
+  .act.hl .ic{border-color:var(--gold2)}
+  .act.warn{background:linear-gradient(180deg,#4b3270,#2e1f4a)}
+  .act:disabled{opacity:.4}
+  #log{margin-top:10px;font-size:12.5px;color:var(--muted);overflow-y:auto;max-height:76px;line-height:1.7;border-top:1px solid rgba(201,162,78,.25);padding-top:6px}
+  #log div:first-child{color:var(--txt)}
+
+  /* Modal */
+  #modal{position:fixed;inset:0;z-index:10;background:rgba(6,8,26,.55);display:flex;align-items:flex-end;justify-content:center}
+  #modal[hidden]{display:none}
+  .card{width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:var(--paper);border-top:3px solid var(--gold);border-radius:10px 10px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));animation:up .28s ease-out;
+    background-image:radial-gradient(circle at 100% 0,rgba(201,162,78,.12),transparent 40%),radial-gradient(circle at 0 100%,rgba(178,58,46,.06),transparent 40%)}
+  @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .card h3{margin:0 0 12px;font-size:18px;text-align:center;letter-spacing:.18em;color:var(--ver2);font-weight:900}
+  .card h3::before,.card h3::after{content:"❖";color:var(--gold);font-size:12px;margin:0 10px;vertical-align:middle}
+  .card p{margin:6px 0;line-height:1.8;font-size:15px}
+  .hint{background:#f4ecd8;border-left:3px solid var(--ver);padding:8px 10px;border-radius:3px;font-size:14px;color:#5a4a3a}
+  .note{color:#8a7a5a;font-size:13px}
+  .opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .opt{border:1px solid var(--line);border-radius:6px;padding:13px 14px;font-family:inherit;font-size:15px;text-align:left;background:var(--paper2);color:var(--ink);cursor:pointer}
+  .opt:active{background:#eadcb8}
+  .opt.primary{background:linear-gradient(180deg,#c2452f,#8f2a22);color:#fbeccb;border-color:var(--ver2);text-align:center;font-weight:700;letter-spacing:.15em}
+  .opt.ghost{background:transparent;border-color:transparent;color:#8a7a5a;text-align:center}
+  .opt.right{background:#dcefd9;border-color:#9cc596}.opt.wrong{background:#f6dcd6;border-color:#d9a197}
+  .opt small{display:block;color:#8a7a5a;margin-top:2px;font-size:12.5px}
+  textarea,input[type=text]{width:100%;border:1px solid var(--line);background:#fffdf7;border-radius:6px;padding:12px;font-size:16px;font-family:inherit;outline:none;user-select:text;-webkit-user-select:text;color:var(--ink)}
+  textarea{min-height:120px;resize:none;line-height:1.8}
+  textarea:focus,input:focus{border-color:var(--gold)}
+  .hold{margin:18px auto 6px;width:150px;height:150px;border-radius:50%;border:0;cursor:pointer;
+    background:conic-gradient(var(--ver) calc(var(--p,0)*1%), #eadfc6 0);display:flex;align-items:center;justify-content:center;touch-action:none}
+  .hold span{width:126px;height:126px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:900;color:var(--ver);font-family:"Ma Shan Zheng",serif}
+
+  /* Setup */
+  #setup{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(6,8,26,.35)}
+  #setup .card{border-radius:10px;max-width:420px;border:1px solid var(--gold);border-top-width:3px}
+  .title{text-align:center;font-family:"Ma Shan Zheng","STXingkai","KaiTi",serif;font-size:48px;color:var(--ver2);margin:0;line-height:1.2}
+  .sub{text-align:center;color:#8a7a5a;font-size:14px;margin-bottom:16px;letter-spacing:.3em}
+  .roles{display:flex;gap:8px;margin:6px 0 12px}
+  .roles button{flex:1;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--paper2);font-family:inherit;font-size:15px;letter-spacing:.3em;cursor:pointer;color:var(--ink)}
+  .roles button.on{border-color:var(--ver);background:#f6e2d8;color:var(--ver2);font-weight:700}
+  label.lb{font-size:13px;color:#8a7a5a;font-weight:600;display:block;margin-top:6px;letter-spacing:.15em}
+
+  /* Report */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+  .stat{background:#f4ecd8;border:1px solid var(--line);border-radius:6px;padding:10px 6px;text-align:center}
+  .stat b{display:block;font-size:20px;color:var(--ver2)}
+  .stat span{font-size:12px;color:#8a7a5a}
+  .sec{font-size:14px;font-weight:900;margin:16px 0 6px;color:var(--ver2);letter-spacing:.15em}
+  .health{display:flex;align-items:center;gap:14px;background:#f4ecd8;border:1px solid var(--gold);border-radius:6px;padding:12px}
+  .health .score{font-size:42px;font-weight:900;color:var(--ver);line-height:1}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{border:1px solid var(--line);padding:7px 12px;border-radius:4px;background:var(--paper2);font-family:inherit;font-size:14px;cursor:pointer;color:var(--ink)}
+  .tag.on{background:var(--ver2);border-color:var(--ver2);color:var(--paper)}
+  .moods{display:flex;justify-content:space-between;margin:8px 0}
+  .moods button{font-family:"Ma Shan Zheng",serif;font-size:28px;border:1px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:50%;width:17%;aspect-ratio:1;cursor:pointer}
+  .moods button.on{background:var(--ver);border-color:var(--gold);color:#fff}
+  .chart{width:100%;height:110px;background:#fffdf7;border:1px solid var(--line);border-radius:6px}
+  .legend{font-size:12px;color:#8a7a5a;display:flex;gap:12px}
+  .legend i{display:inline-block;width:10px;height:3px;vertical-align:middle;margin-right:4px}
+  ul.tips{margin:4px 0;padding-left:20px;font-size:14px;line-height:1.8}
+
+  .petal{position:fixed;z-index:30;pointer-events:none;font-size:20px;animation:floatup 1.8s ease-out forwards;text-shadow:0 0 6px rgba(255,255,255,.6)}
+  @keyframes floatup{from{transform:translate(0,0) scale(.6) rotate(0);opacity:1}to{transform:translate(var(--dx),-150px) scale(1.2) rotate(180deg);opacity:0}}
+  #fade{position:fixed;inset:0;z-index:40;background:#060b26;color:var(--gold2);display:flex;align-items:center;justify-content:center;text-align:center;
+    font-size:18px;letter-spacing:.12em;line-height:2.2;opacity:0;pointer-events:none;transition:opacity 1.2s;padding:30px}
+  #fade.on{opacity:1;pointer-events:auto}
+  #toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-90px);z-index:50;background:rgba(12,18,44,.94);color:var(--txt);
+    border:1px solid var(--gold);padding:9px 16px;border-radius:4px;font-size:14px;letter-spacing:.06em;transition:transform .3s;max-width:90vw;text-align:center}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+
+<div id="app">
+  <header class="hud frame">
+    <div class="hud-row">
+      <span><b id="hDay">第一日</b> · <span id="hTime">辰时</span></span>
+      <span class="chip" id="hStage">初遇</span>
+      <span>◆ <b id="hGold">100</b></span>
+      <span class="btns">
+        <button class="seal-btn" id="btnMusic" aria-label="背景音乐">乐</button>
+        <button class="seal-btn" id="btnBook" aria-label="TA的小册">册</button>
+        <button class="seal-btn" id="btnReport" aria-label="情缘录">录</button>
+      </span>
+    </div>
+    <div class="bars">
+      <div class="bar">情缘 <span id="vAff">0</span><div class="track"><div class="fill" id="fAff" style="background:linear-gradient(90deg,#d9573a,#ff9ab3)"></div></div></div>
+      <div class="bar">心绪 · <span id="eMood">静</span> <span id="vMood">60</span><div class="track"><div class="fill" id="fMood" style="background:linear-gradient(90deg,#c9a24e,#f3dc95)"></div></div></div>
+    </div>
+  </header>
+
+  <section id="scene">
+    <div id="chars">
+      <div class="char me"><div id="meFig"></div><div class="nm" id="meNm">我</div></div>
+      <div class="char ta" id="taChar">
+        <div class="bubble" id="bubble"></div>
+        <div class="emo" id="taEmo">静</div>
+        <div id="taFig"></div><div class="nm" id="taNm">TA</div>
+      </div>
+    </div>
+    <div id="pet">🦊</div>
+    <div id="music"><div id="yt"></div><div class="cap" title="点击换下一首">♪ 想某人（合唱版）· 白嘉峻 / 王优秀</div></div>
+  </section>
+
+  <section class="panel frame">
+    <div id="actions"></div>
+    <div id="log"></div>
+  </section>
+</div>
+
+<div id="modal" hidden><div class="card" id="card"></div></div>
+<div id="setup"></div>
+<div id="fade"></div>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const rand = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cn = n => { const d = '零一二三四五六七八九'; if (n < 10) return d[n]; if (n === 10) return '十'; if (n < 20) return '十' + d[n % 10]; if (n < 100) return d[Math.floor(n / 10)] + '十' + (n % 10 ? d[n % 10] : ''); return String(n); };
+
+/* ================= 人物立绘（背影） ================= */
+// 随风飘动：同一路径在两种形态间缓动
+const wave = (a, b, dur = 3.2) => `<animate attributeName="d" dur="${dur}s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1" values="${a};${b};${a}"/>`;
+const SLEEVE_R = ['M96 82 C 120 78, 150 92, 198 96 C 196 112, 190 124, 198 140 C 160 132, 130 120, 104 112 Z',
+                  'M96 82 C 122 72, 152 82, 198 84 C 194 102, 192 118, 196 130 C 160 126, 130 118, 104 112 Z'];
+const SLEEVE_L = ['M62 82 C 48 92, 36 110, 30 128 C 26 160, 30 190, 20 222 C 40 210, 50 180, 52 150 C 56 130, 62 112, 66 100 Z',
+                  'M62 82 C 48 92, 37 110, 31 128 C 28 160, 34 190, 28 224 C 44 210, 52 180, 53 150 C 57 130, 62 112, 66 100 Z'];
+const FIG = {
+  f: (id) => {
+    const skirt = ['M64 122 C 58 170, 50 214, 38 254 L 128 254 C 150 246, 178 236, 198 222 C 170 206, 132 172, 98 122 Z',
+                   'M64 122 C 58 170, 50 214, 38 254 L 128 254 C 152 242, 180 228, 198 210 C 168 198, 130 170, 98 122 Z'];
+    const hem = ['M38 254 L 128 254 C 150 246, 178 236, 198 222', 'M38 254 L 128 254 C 152 242, 180 228, 198 210'];
+    const hair = ['M74 56 C 70 84, 80 108, 104 126 C 126 140, 150 142, 178 152 C 150 148, 124 138, 102 120 C 90 106, 86 80, 88 56 Z',
+                  'M74 56 C 70 84, 82 106, 106 122 C 128 134, 152 134, 180 138 C 152 138, 126 130, 104 114 C 92 102, 86 80, 88 56 Z'];
+    const ribbon = ['M66 118 C 100 150, 140 138, 198 160', 'M66 118 C 100 140, 142 152, 198 146'];
+    return `<svg class="fig" viewBox="0 0 200 260"><defs>
+      <linearGradient id="r${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8247"/><stop offset=".5" stop-color="#e6401f"/><stop offset="1" stop-color="#9f2216"/></linearGradient>
+      <linearGradient id="s${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#fff6f0" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>
+      <linearGradient id="v${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity=".25"/></linearGradient></defs>
+      <path d="${SLEEVE_R[0]}" fill="url(#s${id})">${wave(...SLEEVE_R)}</path>
+      <path d="${ribbon[0]}" stroke="#ff9a6a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9">${wave(...ribbon, 2.6)}</path>
+      <path d="${skirt[0]}" fill="url(#r${id})">${wave(...skirt)}</path>
+      <path d="${hem[0]}" stroke="#f2c46a" stroke-width="3" fill="none">${wave(...hem)}</path>
+      <path d="M80 126 C 78 170, 74 210, 70 252 M90 126 C 96 160, 104 196, 112 250 M72 126 C 66 170, 60 210, 54 252" stroke="rgba(255,210,150,.45)" stroke-width="1.2" fill="none"/>
+      <path d="${SLEEVE_L[0]}" fill="url(#v${id})">${wave(...SLEEVE_L, 3.6)}</path>
+      <path d="M62 80 C 58 100, 62 114, 66 124 L 96 124 C 100 114, 104 100, 98 80 C 90 84, 70 84, 62 80 Z" fill="url(#r${id})"/>
+      <path d="M70 92 C 76 100, 84 100, 90 92 M68 106 C 76 112, 86 112, 92 106" stroke="#f2c46a" stroke-width="1.2" fill="none"/>
+      <path d="M64 116 L 98 116 L 97 125 L 65 125 Z" fill="#f2c46a"/><circle cx="81" cy="121" r="2.6" fill="#5fc4a8"/>
+      <path d="M64 80 C 66 72, 74 68, 80 68 C 86 68, 94 72, 96 80 C 88 84, 72 84, 64 80 Z" fill="#f1d0bc"/>
+      <path d="M62 80 C 72 85, 88 85, 98 80" stroke="#f2c46a" stroke-width="2" fill="none"/>
+      <rect x="76" y="56" width="8" height="14" fill="#ecc6b0"/>
+      <path d="${hair[0]}" fill="#15111a">${wave(...hair, 2.8)}</path>
+      <ellipse cx="80" cy="46" rx="13" ry="15" fill="#15111a"/>
+      <ellipse cx="80" cy="27" rx="9.5" ry="8.5" fill="#15111a"/><ellipse cx="89" cy="31" rx="5" ry="6" fill="#15111a"/>
+      <path d="M69 31 Q 80 18 91 31" stroke="#f2c46a" stroke-width="2.6" fill="none"/>
+      <path d="M74 25 L 72 15 M80 21 L 80 10 M86 25 L 88 15" stroke="#f2c46a" stroke-width="1.6"/>
+      <circle cx="72" cy="15" r="1.8" fill="#e03a3a"/><circle cx="80" cy="10" r="2" fill="#e03a3a"/><circle cx="88" cy="15" r="1.8" fill="#e03a3a"/><circle cx="80" cy="24" r="2.6" fill="#e03a3a"/>
+      <path d="M90 29 L 107 22" stroke="#f2c46a" stroke-width="1.6" stroke-linecap="round"/>
+      <g><path d="M107 22 L 108 36" stroke="#f2c46a" stroke-width="1"/><circle cx="108" cy="30" r="1.3" fill="#f2c46a"/><circle cx="108" cy="37" r="1.8" fill="#e03a3a"/>
+        <animateTransform attributeName="transform" type="rotate" values="-8 107 22;8 107 22;-8 107 22" dur="2.4s" repeatCount="indefinite"/></g>
+    </svg>`;
+  },
+  m: (id) => {
+    const skirt = ['M60 122 C 56 170, 52 214, 46 254 L 120 254 C 140 248, 160 240, 178 228 C 150 212, 124 176, 100 122 Z',
+                   'M60 122 C 56 170, 52 214, 46 254 L 120 254 C 142 246, 164 236, 180 220 C 150 206, 124 174, 100 122 Z'];
+    const hem = ['M46 254 L 120 254 C 140 248, 160 240, 178 228', 'M46 254 L 120 254 C 142 246, 164 236, 180 220'];
+    const hair = ['M72 52 C 68 80, 72 104, 84 120 C 98 132, 118 136, 140 142 C 118 132, 100 118, 92 100 C 87 84, 88 66, 88 52 Z',
+                  'M72 52 C 68 80, 74 102, 86 116 C 100 126, 120 128, 142 130 C 120 126, 102 114, 94 98 C 88 84, 88 66, 88 52 Z'];
+    const band = ['M86 26 C 104 30, 120 26, 142 34', 'M86 26 C 104 24, 122 34, 144 28'];
+    return `<svg class="fig" viewBox="0 0 200 260"><defs>
+      <linearGradient id="b${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbfdff"/><stop offset=".55" stop-color="#d9e8f6"/><stop offset="1" stop-color="#7fa6d0"/></linearGradient>
+      <linearGradient id="s${id}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f7fbff"/><stop offset=".6" stop-color="#e6f0fb" stop-opacity=".85"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>
+      <linearGradient id="v${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7fbff"/><stop offset="1" stop-color="#fff" stop-opacity=".3"/></linearGradient></defs>
+      <path d="${SLEEVE_R[0]}" fill="url(#s${id})">${wave(...SLEEVE_R, 3.4)}</path>
+      <path d="${skirt[0]}" fill="url(#b${id})">${wave(...skirt, 3.4)}</path>
+      <path d="${hem[0]}" stroke="#4f78a8" stroke-width="3" fill="none">${wave(...hem, 3.4)}</path>
+      <path d="M80 126 C 78 170, 76 210, 74 252 M92 126 C 98 160, 104 196, 110 250" stroke="rgba(90,130,180,.35)" stroke-width="1.2" fill="none"/>
+      <path d="${SLEEVE_L[0]}" fill="url(#v${id})">${wave(...SLEEVE_L, 3.8)}</path>
+      <path d="M58 76 C 54 98, 58 114, 62 124 L 100 124 C 104 114, 108 98, 102 76 C 92 70, 68 70, 58 76 Z" fill="url(#b${id})"/>
+      <path d="M66 90 C 74 96, 86 96, 94 90" stroke="#9ab8d8" stroke-width="1.2" fill="none"/>
+      <path d="M62 114 L 100 114 L 99 124 L 63 124 Z" fill="#2f4d78"/><circle cx="81" cy="119" r="2.4" fill="#e8c06a"/>
+      <path d="M80 124 L 80 140" stroke="#2f4d78" stroke-width="1.4"/><circle cx="80" cy="143" r="3" fill="#7fd1b8"/>
+      <path d="M68 72 C 74 67, 86 67, 92 72" stroke="#2f4d78" stroke-width="3" fill="none"/>
+      <path d="${band[0]}" stroke="#4f78a8" stroke-width="2" fill="none" stroke-linecap="round">${wave(...band, 2.4)}</path>
+      <path d="${hair[0]}" fill="#13111a">${wave(...hair, 3)}</path>
+      <ellipse cx="80" cy="44" rx="12.5" ry="14.5" fill="#13111a"/>
+      <ellipse cx="80" cy="27" rx="6.5" ry="6" fill="#13111a"/>
+      <path d="M73 31 L 74.5 19 L 85.5 19 L 87 31 Z" fill="#e8c06a"/><circle cx="80" cy="24" r="1.8" fill="#4f78a8"/>
+      <path d="M66 25 L 96 23" stroke="#e8c06a" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>`;
+  },
+};
+
+/* ================= 数据 ================= */
+const SAVE_KEY = 'cloudlove_xian_v1';
+const TIMES = ['辰时', '午时', '酉时', '子时'];
+const STAGES = [
+  { name: '初遇', need: 0 },
+  { name: '倾心', need: 20 },
+  { name: '结缘', need: 45, event: '表白心意', ic: '缘' },
+  { name: '同居', need: 70, event: '同住仙居', ic: '居' },
+  { name: '大婚', need: 90, event: '求亲', ic: '囍' },
+];
+const PREFS = {
+  food:   { label: '最爱的吃食', pool: ['云片糕', '桂花糕', '杏仁酥', '蟠桃', '琼浆玉露'], line: v => `我自幼便最爱${v}。` },
+  gift:   { label: '最想收到的礼物', pool: ['星辰花', '仙鹤羽扇', '琉璃步摇', '亲笔情笺'], line: v => `若有人赠我${v}，我能欢喜好些日子。` },
+  place:  { label: '最爱去的地方', pool: ['瑶池', '星河廊桥', '十里桃林', '天街'], line: v => `${v}是我最爱去的地方。` },
+  color:  { label: '最偏爱的颜色', pool: ['月白', '绛红', '天青', '藕荷', '鎏金'], line: v => `我偏爱${v}，素净又好看。` },
+  season: { label: '最喜欢的时节', pool: ['春日', '夏日', '秋日', '冬日'], line: v => `一年之中，我最喜${v}。` },
+  animal: { label: '最喜欢的灵兽', pool: ['白狐', '仙鹤', '锦鲤', '玉兔'], line: v => `${v}真是可爱，好想养一只。` },
+};
+const ITEMS = [
+  { n: '云片糕', p: 15, k: 'food', ic: '🍘' }, { n: '桂花糕', p: 20, k: 'food', ic: '🍰' },
+  { n: '杏仁酥', p: 20, k: 'food', ic: '🥮' }, { n: '蟠桃', p: 40, k: 'food', ic: '🍑' },
+  { n: '琼浆玉露', p: 50, k: 'food', ic: '🍶' }, { n: '星辰花', p: 30, k: 'gift', ic: '✨' },
+  { n: '仙鹤羽扇', p: 60, k: 'gift', ic: '🪭' }, { n: '琉璃步摇', p: 80, k: 'gift', ic: '📍' },
+  { n: '亲笔情笺', p: 0, k: 'gift', ic: '📜', write: true },
+  { n: '同心玉佩', p: 300, k: 'ring', ic: '🪬' }, { n: '灵宠 · 九尾白狐', p: 150, k: 'pet', ic: '🦊' },
+];
+const PLACES = {
+  '瑶池': '瑶池水光潋滟，你们并肩立于池畔，看锦鲤游过倒影。',
+  '星河廊桥': '星河廊桥流光点点，TA悄悄倚在了你肩上。',
+  '十里桃林': '桃花落了TA满肩，你轻轻替TA拂去。',
+  '天街': '你们逛遍了天街，TA手里还捧着一包桂花糕。',
+};
+const EMO = { happy: '喜', calm: '静', shy: '羞', down: '郁', sad: '委', angry: '怒', cold: '冷' };
+const REASONS = {
+  neglect:     { label: '我近来太忙，冷落了你', hint: 'TA望了一眼你腰间的当值令牌，又转过身去。', best: ['hug', 'listen'], line: '你心里只有当值。' },
+  forgot:      { label: '我忘了答应过你的事', hint: 'TA低声道：「某人说过要陪我看日落的……」', best: ['apology', 'gift'], line: '我没有生气。' },
+  perfunctory: { label: '我方才说话太敷衍', hint: 'TA学着你的语气：「嗯。哦。随你。」', best: ['apology', 'letter'], line: '你根本没在听我说话。' },
+  jealous:     { label: '我与隔壁仙子走得太近', hint: 'TA淡淡道：「隔壁仙子的桂花糕，想必很好吃吧？」', best: ['hug', 'letter'], line: '去找隔壁仙子便是。' },
+  outside:     { label: '你今日在外头受了委屈', hint: 'TA眼眶微红，手中攥着一张揉皱了的天庭考评。', best: ['listen', 'hug', 'food'], line: '别问了。' },
+};
+const METHODS = {
+  apology: { t: '郑重致歉', d: '坦诚认错，说清哪里不对' },
+  hug:     { t: '长按相拥', d: '什么都不说，只是抱紧TA', hold: true },
+  listen:  { t: '静静倾听', d: '不讲道理，只是陪着' },
+  food:    { t: '亲手下厨', d: '花费灵石 20', cost: 20 },
+  gift:    { t: '赠一件小礼', d: '花费灵石 30', cost: 30 },
+  letter:  { t: '写一封书信', d: '亲笔写下心里话', write: true },
+  joke:    { t: '讲个笑话', d: '有些冒险，看运气' },
+};
+const TOPICS = [
+  { q: '今日云海甚好，你在想什么？', o: [
+    ['在想你', 3, 10, '……油嘴滑舌。不过，我爱听。'],
+    ['在想今晚吃什么', 1, 3, '你呀，就知道吃。'],
+    ['没想什么', 0, -6, '……哦。'] ] },
+  { q: '若有一日我容颜老去，你可还会心悦于我？', o: [
+    ['会。我们一起老去', 4, 12, '……一言为定。'],
+    ['你本就……说笑的！', -1, -10, '你再说一遍？'],
+    ['那我先老，等你', 3, 10, '哪有你这样的。'] ] },
+  { q: '今日被月老训斥了，心里好闷。', o: [
+    ['过来，同我说说', 4, 15, '……还是你最好。'],
+    ['定是你做错了什么', -2, -16, '你究竟站在哪一边？'],
+    ['走，带你去天街吃好吃的', 3, 12, '那我要吃最贵的。'] ] },
+  { q: '你觉得，我们像什么？', o: [
+    ['像云与风，从不分离', 3, 10, '今日嘴怎么这样甜。'],
+    ['像猫与鼠', 2, 6, '那你是鼠。'],
+    ['像同僚吧', -2, -15, '……同僚？'] ] },
+  { q: '近来你似乎很忙？', o: [
+    ['再忙也会陪你', 3, 10, '这还差不多。'],
+    ['嗯，要多攒些灵石', 1, 0, '也是……莫要太累。'],
+    ['你别管了', -3, -20, '……好，我不管。'] ] },
+  { q: '若能一同下凡，去人间走走就好了。', o: [
+    ['待我攒够灵石，便带你去', 3, 8, '那便说定了。'],
+    ['人间有什么好的', 0, -6, '……扫兴。'],
+    ['此处云海，便是你我的人间', 2, 10, '……你何时学会说这种话了。'] ] },
+  { q: '你看那群仙鹤，飞得好远。', o: [
+    ['它们飞多远，我便陪你看多远', 3, 10, '……嗯。'],
+    ['像一串糖葫芦', 2, 6, '噗——'],
+    ['鹤有什么好看的', -1, -8, '……'] ] },
+];
+const CHECK_TAGS = ['一起吃饭', '视频/聊天很久', '收到小惊喜', '很想TA', '吵架了', '和好了', '冷战中', '有点累', '工作压力大', '异地', '一起出去玩', '亲密时光'];
+const MOOD_CH = ['悲', '忧', '平', '安', '甜'];
+
+/* ================= 状态 ================= */
+let S = null;
+function newState(me, ta, meRole, taRole) {
+  const prefs = {};
+  for (const k in PREFS) prefs[k] = rand(PREFS[k].pool);
+  return {
+    me, ta, meRole, taRole, day: 1, time: 0, gold: 100, aff: 0, mood: 60, tacit: 0, stage: 0,
+    emotion: 'calm', reason: null, guessed: false, wrong: 0, petHint: false,
+    neglect: 0, interacted: false, prefs, known: {}, ring: false, pet: false,
+    today: { quiz: false, pet: false, intim: [] },
+    stats: { quarrels: 0, reconciled: 0, cold: 0, wrong: 0, wins: {}, reasons: {}, chats: 0, gifts: 0, dates: 0, intim: 0, work: 0, angerStart: 0, recoverSlots: [] },
+    history: [], checkins: [], log: [],
+  };
+}
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function load() { try { const t = localStorage.getItem(SAVE_KEY); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+
+/* ================= UI 工具 ================= */
+let bubbleTimer;
+function say(text) {
+  const b = $('#bubble'); b.textContent = text; b.classList.add('show');
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => b.classList.remove('show'), 4500);
+}
+function log(text) { S.log.unshift(`【第${cn(S.day)}日·${TIMES[Math.min(S.time, 3)]}】${text}`); S.log = S.log.slice(0, 40); }
+let toastTimer;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2400); }
+function petals(n = 14) {
+  const r = $('#taChar').getBoundingClientRect();
+  const kinds = [['❀', '#ffb3c7'], ['✿', '#ffd0dc'], ['✦', '#f3d27a'], ['❁', '#ff9ab3']];
+  for (let i = 0; i < n; i++) {
+    const [ch, col] = rand(kinds);
+    const h = document.createElement('div'); h.className = 'petal'; h.textContent = ch; h.style.color = col;
+    h.style.left = (r.left + r.width / 2 - 34 + Math.random() * 68) + 'px';
+    h.style.top = (r.top + 30 + Math.random() * 40) + 'px';
+    h.style.setProperty('--dx', (Math.random() * 130 - 65) + 'px');
+    h.style.animationDelay = (Math.random() * .6) + 's';
+    document.body.appendChild(h); setTimeout(() => h.remove(), 2600);
+  }
+}
+function modal(title, body, opts = [], noClose) {
+  let html = `<h3>${title}</h3>${body}<div class="opts">`;
+  opts.forEach((o, i) => { html += `<button class="opt ${o.cls || ''}" data-i="${i}">${o.t}${o.d ? `<small>${o.d}</small>` : ''}</button>`; });
+  if (!noClose) html += `<button class="opt ghost" data-close>收起</button>`;
+  html += '</div>';
+  $('#card').innerHTML = html; $('#modal').hidden = false; $('#card').scrollTop = 0;
+  $('#card').querySelectorAll('[data-i]').forEach(b => b.onclick = () => opts[+b.dataset.i].fn());
+  const c = $('#card').querySelector('[data-close]'); if (c) c.onclick = closeModal;
+}
+function closeModal() { $('#modal').hidden = true; }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal' && $('#card').querySelector('[data-close]')) closeModal(); });
+
+function holdModal(title, text, cb) {
+  $('#card').innerHTML = `<h3>${title}</h3><p style="text-align:center">${text}</p><button class="hold" id="holdBtn"><span>拥</span></button><p class="note" style="text-align:center">按住不放，直至圆满</p>`;
+  $('#modal').hidden = false;
+  const btn = $('#holdBtn'); let p = 0, iv = null;
+  const stop = () => { clearInterval(iv); iv = null; if (p < 100) { p = 0; btn.style.setProperty('--p', 0); } };
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault(); if (iv) return;
+    iv = setInterval(() => {
+      p += 4; btn.style.setProperty('--p', p);
+      if (navigator.vibrate && p % 20 === 0) navigator.vibrate(10);
+      if (p >= 100) { clearInterval(iv); iv = null; closeModal(); cb(); }
+    }, 60);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+}
+function writeModal(title, ph, cb) {
+  $('#card').innerHTML = `<h3>${title}</h3><textarea id="wr" placeholder="${ph}"></textarea>
+    <div class="opts"><button class="opt primary" id="wrOk" disabled>封好，交予TA</button><button class="opt ghost" data-close>作罢</button></div>`;
+  $('#modal').hidden = false;
+  const ta = $('#wr'), ok = $('#wrOk');
+  ta.oninput = () => ok.disabled = ta.value.trim().length < 8;
+  ok.onclick = () => { closeModal(); cb(ta.value.trim()); };
+  $('#card').querySelector('[data-close]').onclick = closeModal;
+  setTimeout(() => ta.focus(), 100);
+}
+
+/* ================= 渲染 ================= */
+let figKey = '';
+function render() {
+  $('#hDay').textContent = `第${cn(S.day)}日`; $('#hTime').textContent = TIMES[S.time];
+  $('#hStage').textContent = STAGES[S.stage].name; $('#hGold').textContent = S.gold;
+  $('#vAff').textContent = S.aff; $('#fAff').style.width = S.aff + '%';
+  $('#vMood').textContent = S.mood; $('#fMood').style.width = S.mood + '%';
+  $('#eMood').textContent = EMO[S.emotion]; $('#taEmo').textContent = EMO[S.emotion];
+  if (figKey !== S.meRole + S.taRole) {
+    figKey = S.meRole + S.taRole;
+    $('#meFig').innerHTML = FIG[S.meRole]('me'); $('#taFig').innerHTML = FIG[S.taRole]('ta');
+  }
+  $('#meNm').textContent = S.me; $('#taNm').textContent = S.ta;
+  $('#taChar').className = 'char ta ' + S.emotion;
+  $('#pet').style.display = S.pet ? 'block' : 'none';
+  $('#log').innerHTML = S.log.slice(0, 12).map(l => `<div>${esc(l)}</div>`).join('');
+  renderActions();
+  if (typeof updateMusicMode === 'function') updateMusicMode();
+}
+function A(ic, label, fn, cls = '', disabled = false) { return { ic, label, fn, cls, disabled }; }
+function renderActions() {
+  const list = [], night = S.time === 3;
+  const rest = A(night ? '寝' : '坐', night ? '就寝' : '静坐片刻', doRest);
+  if (S.emotion === 'cold') {
+    list.push(A('冷', 'TA不理你', () => toast(`${S.ta}此刻不愿说话，明日再试吧`), 'warn'));
+    list.push(A('值', '天庭当值', doWork));
+    if (S.pet) list.push(A('狐', '逗弄雪团', doPet));
+    list.push(rest);
+  } else if (S.reason) {
+    list.push(A('哄', S.guessed ? '继续哄TA' : '问TA何事', coax, 'warn'));
+    list.push(A('值', '天庭当值', doWork));
+    list.push(A(night ? '寝' : '坐', '让TA静一静', doRest));
+  } else {
+    list.push(A('叙', '叙话', doChat));
+    list.push(A('宝', '珍宝阁', doShop));
+    if (S.stage >= 1) list.push(A('游', '同游', doDate));
+    if (S.stage >= 1) list.push(A('情', '温存', doIntim));
+    if (S.stage >= 1) list.push(A('灵', S.today.quiz ? '明日再问' : '心有灵犀', doQuiz, '', S.today.quiz));
+    list.push(A('值', '天庭当值', doWork));
+    if (S.pet) list.push(A('狐', '逗弄雪团', doPet, '', S.today.pet));
+    const nx = STAGES[S.stage + 1];
+    if (nx && nx.event && S.aff >= nx.need) list.push(A(nx.ic, nx.event, doMilestone, 'hl'));
+    list.push(rest);
+  }
+  list.push(A('记', todayChecked() ? '今日已记' : '凡尘记事', doCheckin, todayChecked() ? '' : 'hl'));
+  const box = $('#actions'); box.innerHTML = '';
+  list.forEach(a => {
+    const b = document.createElement('button'); b.className = 'act ' + a.cls; b.disabled = a.disabled;
+    b.innerHTML = `<span class="ic">${a.ic}</span>${a.label}`; b.onclick = a.fn; box.appendChild(b);
+  });
+}
+
+/* ================= 核心逻辑 ================= */
+function change(aff, mood) {
+  S.aff = clamp(S.aff + aff, 0, 100);
+  S.mood = clamp(S.mood + mood, 0, 100);
+  if (S.stage === 0 && S.aff >= STAGES[1].need) {
+    S.stage = 1; log('你们渐渐熟络，心中暗生情愫——「倾心」');
+    setTimeout(() => toast('解锁：同游 · 温存 · 心有灵犀'), 400);
+  }
+  syncEmotion();
+}
+function syncEmotion() {
+  if (S.reason || S.emotion === 'cold') return;
+  S.emotion = S.mood >= 75 ? 'happy' : S.mood >= 40 ? 'calm' : 'down';
+}
+function slotIndex() { return S.day * 4 + S.time; }
+function advance() { S.time++; if (S.time > 3) endDay(); render(); save(); }
+function endDay() {
+  if (S.stage >= 1 && !S.interacted) { S.mood = clamp(S.mood - 15, 0, 100); S.neglect++; log(`今日几乎未曾陪伴${S.ta}，TA有些落寞`); }
+  if (S.reason) S.mood = clamp(S.mood - 8, 0, 100);
+  if (S.emotion === 'cold') { S.emotion = 'sad'; S.wrong = 0; S.guessed = false; }
+  S.history.push({ day: S.day, mood: S.mood, aff: S.aff });
+  S.day++; S.time = 0; S.interacted = false;
+  S.today = { quiz: false, pet: false, intim: [] };
+  if (!S.reason) S.mood = Math.round(S.mood + (60 - S.mood) * 0.2);
+  syncEmotion();
+  log('晨钟响起，新的一日');
+}
+function interact() { S.interacted = true; S.neglect = Math.max(0, S.neglect - 1); }
+
+function maybeAnger(trigger) {
+  if (S.stage < 1 || S.reason || S.emotion === 'cold') return;
+  let p = 0.05 + S.neglect * 0.07 + (S.mood < 40 ? 0.15 : 0);
+  if (trigger === 'bad') p = 0.6;
+  if (Math.random() >= p) return;
+  let r;
+  if (trigger === 'bad') r = 'perfunctory';
+  else if (S.neglect >= 2) r = 'neglect';
+  else r = rand(['forgot', 'jealous', 'outside', ...(S.neglect ? ['neglect'] : [])]);
+  S.reason = r; S.emotion = 'angry'; S.guessed = false; S.wrong = 0; S.petHint = false;
+  S.mood = Math.min(S.mood, 35);
+  S.stats.quarrels++; S.stats.reasons[r] = (S.stats.reasons[r] || 0) + 1; S.stats.angerStart = slotIndex();
+  setTimeout(() => say(REASONS[r].line), 300);
+  log(`${S.ta}动了气……`);
+}
+
+/* ----- 叙话 ----- */
+function doChat() {
+  S.stats.chats++;
+  const unknown = Object.keys(PREFS).filter(k => !S.known[k]);
+  if (unknown.length && Math.random() < 0.45) {
+    const k = rand(unknown); S.known[k] = true;
+    say(PREFS[k].line(S.prefs[k])); change(2, 5); interact();
+    log(`你将「${S.ta}${PREFS[k].label}」记入了小册`);
+    toast('已记入小册');
+    maybeAnger(); advance(); return;
+  }
+  const t = rand(TOPICS);
+  modal(esc(S.ta), `<p style="text-align:center">「${t.q}」</p>`, t.o.map(o => ({
+    t: o[0], fn: () => {
+      closeModal();
+      change(Math.round(o[1] * (S.stage === 0 ? 0.6 : 1)), o[2]); say(o[3]); interact();
+      log(`你说：「${o[0]}」`);
+      maybeAnger(o[2] <= -15 ? 'bad' : undefined); advance();
+    }
+  })));
+}
+
+/* ----- 珍宝阁 ----- */
+function doShop() {
+  modal('珍宝阁', `<p class="note">购得之物即刻赠予${esc(S.ta)}（玉佩与灵宠除外）。若恰是TA心头所好，情意倍增。</p>`,
+    ITEMS.filter(it => !(it.k === 'pet' && S.pet) && !(it.k === 'ring' && S.ring)).map(it => ({
+      t: `${it.ic}　${it.n}`, d: it.p ? `灵石 ${it.p}` : '分文不取，唯需真心', fn: () => buy(it)
+    })));
+}
+function buy(it) {
+  if (S.gold < it.p) { toast('灵石不足，不妨先去天庭当值'); return; }
+  if (it.write) { writeModal('亲笔情笺', `写下想对${esc(S.ta)}说的话（至少八字）`, txt => giveGift(it, txt)); return; }
+  S.gold -= it.p; closeModal();
+  if (it.k === 'ring') { S.ring = true; log('你悄悄求得一对同心玉佩'); toast('玉佩已收好，待情缘圆满便可求亲'); render(); save(); return; }
+  if (it.k === 'pet') { S.pet = true; change(3, 15); say('好漂亮的小狐狸……唤它「雪团」可好？'); log('你们收养了九尾白狐「雪团」'); petals(8); render(); save(); return; }
+  giveGift(it);
+}
+function giveGift(it, letter) {
+  S.stats.gifts++; interact();
+  const fav = S.prefs[it.k] === it.n;
+  if (fav) { S.known[it.k] = true; change(8, 25); say('你怎知我最喜欢这个？'); petals(); }
+  else if (S.stage === 0) { change(2, 6); say('我们才初相识……不过，多谢。'); }
+  else { change(3, 10); say(rand(['多谢你。', '是给我的？', '……我很喜欢。'])); }
+  if (letter) log(`你写了一封情笺：「${letter.slice(0, 20)}${letter.length > 20 ? '…' : ''}」`);
+  else log(`你赠予${S.ta}「${it.n}」${fav ? '——正是TA心头所好' : ''}`);
+  advance();
+}
+
+/* ----- 同游 ----- */
+function doDate() {
+  modal('同游何处', '<p class="note">每次同游花费灵石 30</p>', Object.keys(PLACES).map(pl => ({
+    t: pl, fn: () => {
+      if (S.gold < 30) { toast('灵石不足'); return; }
+      closeModal(); S.gold -= 30; S.stats.dates++; interact();
+      const fav = S.prefs.place === pl;
+      if (fav) { S.known.place = true; change(8, 25); petals(); say('这是我最爱的地方……你竟记得。'); }
+      else { change(4, 12); say(rand(['今日很开心。', '下回还同你来。'])); }
+      log(`同游${pl}：${PLACES[pl]}`);
+      maybeAnger(); advance();
+    }
+  })));
+}
+
+/* ----- 温存 ----- */
+function doIntim() {
+  const night = S.time === 3;
+  const opts = [
+    { id: 'hand', t: '执手', min: 1, a: 2, m: 8, say: '……你的手好暖。', time: false },
+    { id: 'pat', t: '抚发', min: 1, a: 2, m: 8, say: '做什么呀……', time: false },
+    { id: 'hug', t: '相拥', min: 2, a: 3, m: 12, say: '再抱一会儿。', time: false, hold: true },
+    { id: 'kiss', t: '轻吻', min: 2, a: 3, m: 12, say: '……！', time: false, shy: true },
+    { id: 'star', t: '倚肩观星', min: 2, a: 3, m: 15, say: '若能日日如此便好了。', time: true, night: true },
+    { id: 'night', t: '红烛帐暖', min: 3, a: 4, m: 20, time: true, night: true, fade: true },
+  ];
+  modal('温存', '', opts.map(o => {
+    const lock = S.stage < o.min ? `需至「${STAGES[o.min].name}」` : (o.night && !night ? '唯子时可行' : '');
+    return {
+      t: o.t + (S.today.intim.includes(o.id) ? '　✓' : ''), d: lock || (o.time ? '将耗去一个时辰' : ''), cls: lock ? 'ghost' : '',
+      fn: () => {
+        if (lock) { toast(lock); return; }
+        if (S.mood < 30) { closeModal(); change(0, -3); say('此刻……不想。'); render(); save(); return; }
+        const go = () => {
+          const repeat = S.today.intim.includes(o.id);
+          if (!repeat) S.today.intim.push(o.id);
+          S.stats.intim++; interact();
+          change(repeat ? 1 : o.a, repeat ? 3 : o.m);
+          if (o.shy && !S.reason) S.emotion = 'shy';
+          if (o.fade) {
+            fade('红烛摇曳，纱帐轻垂……<br>窗外云海翻涌，星河流转。<br><br>这一夜，只属于你们。', () => { petals(18); say('……安歇吧。'); });
+            log('红烛帐暖，一夜温柔');
+          } else { say(o.say); petals(6); log(o.t); }
+          if (o.time) advance(); else { render(); save(); }
+        };
+        if (o.hold) holdModal('相拥', `张开双臂，拥住${esc(S.ta)}`, go); else { closeModal(); go(); }
+      }
+    };
+  }));
+}
+function fade(html, cb) {
+  const f = $('#fade'); f.innerHTML = html; f.classList.add('on');
+  setTimeout(() => { f.classList.remove('on'); cb && setTimeout(cb, 700); }, 3600);
+}
+
+/* ----- 当值 / 灵宠 / 静坐 ----- */
+function doWork() {
+  const pay = 40 + S.stage * 15;
+  S.gold += pay; S.neglect++; S.stats.work++;
+  log(`前往天庭当值，得灵石 ${pay}`);
+  toast(`灵石 +${pay}`);
+  maybeAnger(); advance();
+}
+function doPet() {
+  S.today.pet = true;
+  if (S.reason && !S.petHint && S.emotion !== 'cold') {
+    S.petHint = true; log('雪团钻进TA怀里蹭了蹭，似乎知晓TA为何不快');
+    toast('雪团似乎知道缘由……哄TA时会给你提示'); render(); save(); return;
+  }
+  change(2, 6); say(rand(['雪团的尾巴好软。', '它又圆了一圈。'])); petals(5);
+  log('你们一同逗弄雪团');
+  render(); save();
+}
+function doRest() { if (S.time === 3) log('夜深，安歇'); advance(); }
+
+/* ----- 哄 ----- */
+function coax() {
+  const R = REASONS[S.reason];
+  if (!S.guessed) {
+    const others = shuffle(Object.keys(REASONS).filter(k => k !== S.reason)).slice(0, 3);
+    const choices = shuffle([S.reason, ...others]);
+    let body = `<p style="text-align:center">${esc(S.ta)}：「${rand(['无事。', '我没有生气。', '你自己想。', '……'])}」</p><p class="hint">${R.hint}</p>`;
+    if (S.petHint) body += `<p class="hint" style="border-color:var(--gold)">🦊 雪团用尾巴指了指：「${R.label}」</p>`;
+    body += `<p class="note">先猜出TA为何不快（猜错三次便要冷战）</p>`;
+    modal('TA动了气', body, choices.map(k => ({
+      t: `可是因为${REASONS[k].label}？`, fn: () => {
+        if (k === S.reason) {
+          S.guessed = true; S.emotion = 'sad'; say('……你知道便好。');
+          log('你猜中了TA不快的缘由'); render(); save();
+          coaxMethods();
+        } else {
+          S.wrong++; S.stats.wrong++; S.mood = clamp(S.mood - 10, 0, 100);
+          say(rand(['你根本不懂我。', '不是。', '……你再想想。']));
+          closeModal();
+          if (S.wrong >= 3) { S.emotion = 'cold'; S.stats.cold++; log(`${S.ta}不愿再理你，冷战至明日`); toast('冷战开始……明日再哄吧'); }
+          else toast(`猜错了（${S.wrong}/3）`);
+          render(); save();
+        }
+      }
+    })));
+  } else coaxMethods();
+}
+function coaxMethods() {
+  modal('如何哄TA', `<p class="note">缘由不同，哄法亦不同。选对了，方能真正和好。</p>`,
+    Object.entries(METHODS).map(([k, m]) => ({
+      t: m.t, d: m.d, fn: () => {
+        if (m.cost && S.gold < m.cost) { toast('灵石不足'); return; }
+        const done = () => { if (m.cost) S.gold -= m.cost; resolveCoax(k); };
+        if (m.hold) holdModal('拥住TA', '什么都别说，抱紧便好', done);
+        else if (m.write) writeModal('书信', '真诚写下你的心里话（至少八字）', done);
+        else { closeModal(); done(); }
+      }
+    })));
+}
+function resolveCoax(m) {
+  const R = REASONS[S.reason];
+  const win = R.best.includes(m) || (m === 'joke' && Math.random() < 0.35);
+  if (win) {
+    S.stats.reconciled++; S.stats.wins[m] = (S.stats.wins[m] || 0) + 1;
+    S.stats.recoverSlots.push(slotIndex() - S.stats.angerStart);
+    S.reason = null; S.guessed = false; S.wrong = 0; S.tacit++;
+    S.mood = Math.max(S.mood, 75); change(5, 0); S.emotion = 'happy';
+    say(m === 'joke' ? '……好冷的笑话。可我还是笑了。' : rand(['……这次便原谅你。', '……抱紧些。', '你呀。']));
+    petals(18); log(`冰释前嫌，默契 +1（${METHODS[m].t}）`);
+  } else {
+    S.mood = clamp(S.mood + 12, 0, 100);
+    if (S.mood >= 55) {
+      S.stats.reconciled++; S.stats.recoverSlots.push(slotIndex() - S.stats.angerStart);
+      S.reason = null; S.guessed = false; change(2, 0); say('……罢了，不气了。'); log('TA渐渐消了气');
+    } else { say(rand(['……还是有些难过。', '不是这样的。', '嗯。'])); log(`「${METHODS[m].t}」似乎不太对，TA仍不开心`); }
+  }
+  interact(); advance();
+}
+
+/* ----- 心有灵犀 ----- */
+function doQuiz() {
+  const keys = shuffle(Object.keys(PREFS)).slice(0, 5);
+  let i = 0, score = 0;
+  musicOverride = 'play'; updateMusicMode();
+  const ask = () => {
+    if (i >= keys.length) return finish();
+    const k = keys[i], ans = S.prefs[k];
+    const pool = shuffle([ans, ...shuffle(PREFS[k].pool.filter(v => v !== ans)).slice(0, 3)]);
+    modal(`心有灵犀 · ${cn(i + 1)}`, `<p style="text-align:center">${esc(S.ta)}${PREFS[k].label}是？</p>${S.known[k] ? '<p class="hint">小册中记过此事</p>' : ''}`,
+      pool.map(v => ({ t: v, fn: () => {
+        const btns = $('#card').querySelectorAll('[data-i]');
+        btns.forEach((b, j) => { b.onclick = null; if (pool[j] === ans) b.classList.add('right'); else if (pool[j] === v) b.classList.add('wrong'); });
+        if (v === ans) score++;
+        S.known[k] = true; i++; setTimeout(ask, 800);
+      } })), true);
+  };
+  const finish = () => {
+    musicOverride = null;
+    S.today.quiz = true; interact();
+    change(score * 2, score * 3); if (score >= 4) S.tacit++;
+    const msg = score === 5 ? '天作之合。' : score >= 3 ? '你还算懂我。' : '你究竟有没有将我放在心上……';
+    say(msg); if (score >= 3) petals();
+    log(`心有灵犀 ${score}/5${score >= 4 ? '，默契 +1' : ''}`);
+    modal('问毕', `<p style="font-size:40px;text-align:center;margin:10px;color:var(--ver2);font-weight:900">${score} / 5</p><p style="text-align:center">${msg}</p>`, [{ t: '好', cls: 'primary', fn: () => { closeModal(); advance(); } }], true);
+  };
+  ask();
+}
+
+/* ----- 关系节点 ----- */
+function doMilestone() {
+  const nx = STAGES[S.stage + 1];
+  if (nx.event === '求亲' && !S.ring) { toast('尚无信物，可往珍宝阁求一对「同心玉佩」'); return; }
+  const lines = {
+    '表白心意': ['自初见那日起，我心中便只有你', '往后的云海，我都想与你同看', '我心悦你，已经很久了'],
+    '同住仙居': ['我想每日醒来，第一眼便看见你', '我们在云海边寻一处仙居，可好？', '往后你的早膳，由我来做'],
+    '求亲': ['执子之手，与子偕老。你可愿与我结为道侣？', '从云海到星河，余生请多指教', '这一世，下一世，我都要寻到你'],
+  }[nx.event];
+  modal(nx.event, `<p style="text-align:center">你深吸一口气，对${esc(S.ta)}说：</p>`, lines.map(l => ({
+    t: `「${l}」`, fn: () => {
+      closeModal();
+      const need = nx.event === '求亲' ? 60 : 50;
+      if (S.mood < need) { change(-3, -5); say('……容我再想想。'); log(`${nx.event}未成，TA此刻心绪不佳`); toast('先让TA心绪好些再说吧'); render(); save(); return; }
+      S.stage++; S.mood = 100; syncEmotion(); petals(30);
+      if (nx.event === '表白心意') { say('……我也是。'); log('心意相通，你们正式结缘'); toast('解锁：相拥 · 轻吻 · 倚肩观星'); }
+      if (nx.event === '同住仙居') { say('好，我们的家。'); log('你们在云海边有了一处仙居'); toast('解锁：红烛帐暖'); }
+      if (nx.event === '求亲') { say('我愿意。'); log('求亲成功，九重天上大婚'); setTimeout(wedding, 1200); }
+      render(); save();
+    }
+  })));
+}
+function wedding() {
+  petals(40);
+  musicOverride = 'wedding'; updateMusicMode();
+  const endWedding = () => { closeModal(); musicOverride = null; updateMusicMode(); };
+  modal('天庭大婚', `<p>月老亲自主婚，百鹤衔来红绸，九重天上的云海尽染绯色。</p>
+    <p style="text-align:center;font-size:18px;color:var(--ver2)">${esc(S.me)} 　囍　 ${esc(S.ta)}</p>
+    <p style="text-align:center" class="note">于第${cn(S.day)}日，结为道侣</p>
+    <p class="hint">此为原型的最终阶段。完整版尚有：诞育子嗣、置办仙府与坐骑、经营丹坊与工坊、营造宫阙、相伴白头、病中相守，直至化作星河……</p>`,
+    [{ t: '继续我们的日子', cls: 'primary', fn: endWedding }], true);
+}
+
+/* ----- 小册 ----- */
+$('#btnBook').onclick = () => {
+  const rows = Object.entries(PREFS).map(([k, p]) => `<p>${p.label}：<b style="color:var(--ver2)">${S.known[k] ? esc(S.prefs[k]) : '？？？'}</b></p>`).join('');
+  modal(`${esc(S.ta)}的小册`, rows + `<p class="hint">多与TA叙话、同游、赠礼，便能慢慢了解TA</p>`);
+};
+
+/* ================= 凡尘记事 & 情缘录 ================= */
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+function todayChecked() { return S.checkins.some(c => c.date === todayKey()); }
+function doCheckin() {
+  const prev = S.checkins.find(c => c.date === todayKey());
+  let mood = prev ? prev.mood : 0; const tags = new Set(prev ? prev.tags : []);
+  $('#card').innerHTML = `<h3>凡尘记事</h3>
+    <p class="note" style="text-align:center">${todayKey()}　·　仙界之外，现实中的你们今日如何？</p>
+    <div class="sec">今日与TA相处的感受</div>
+    <div class="moods">${MOOD_CH.map((f, i) => `<button data-m="${i + 1}" class="${mood === i + 1 ? 'on' : ''}">${f}</button>`).join('')}</div>
+    <div class="sec">今日发生了什么（可多选）</div>
+    <div class="tags">${CHECK_TAGS.map(t => `<button class="tag ${tags.has(t) ? 'on' : ''}" data-t="${t}">${t}</button>`).join('')}</div>
+    <div class="sec">想记下的一句话（可不填）</div>
+    <input type="text" id="ckNote" maxlength="60" placeholder="如：TA今日为我带了早餐" value="${prev ? esc(prev.note) : ''}">
+    <div class="opts"><button class="opt primary" id="ckOk">记下</button><button class="opt ghost" data-close>收起</button></div>`;
+  $('#modal').hidden = false; $('#card').scrollTop = 0;
+  $('#card').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    mood = +b.dataset.m; $('#card').querySelectorAll('[data-m]').forEach(x => x.classList.toggle('on', x === b));
+  });
+  $('#card').querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+    const t = b.dataset.t; tags.has(t) ? tags.delete(t) : tags.add(t); b.classList.toggle('on');
+  });
+  $('#card').querySelector('[data-close]').onclick = closeModal;
+  $('#ckOk').onclick = () => {
+    if (!mood) { toast('请先选一个感受'); return; }
+    const entry = { date: todayKey(), mood, tags: [...tags], note: $('#ckNote').value.trim() };
+    S.checkins = S.checkins.filter(c => c.date !== entry.date); S.checkins.push(entry);
+    if (!prev) { S.gold += 20; toast('已记下 · 灵石 +20'); } else toast('已更新今日记事');
+    log(`凡尘记事：「${MOOD_CH[mood - 1]}」${entry.tags.length ? ' · ' + entry.tags.join('、') : ''}`);
+    closeModal(); render(); save();
+  };
+}
+
+function lineChart(series) {
+  const w = 300, h = 100, pad = 8;
+  const n = Math.max(...series.map(s => s.data.length));
+  if (n < 2) return '<p class="note">记录尚少，多过几日、多记几笔，便能看到走势</p>';
+  let svg = `<svg class="chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">`;
+  for (let g = 1; g < 4; g++) svg += `<line x1="0" x2="${w}" y1="${h * g / 4}" y2="${h * g / 4}" stroke="#efe4c8" stroke-width="1"/>`;
+  series.forEach(s => {
+    const pts = s.data.map((v, i) => `${(pad + i * (w - 2 * pad) / (n - 1)).toFixed(1)},${(h - pad - v / s.max * (h - 2 * pad)).toFixed(1)}`).join(' ');
+    svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
+  });
+  return svg + '</svg>';
+}
+$('#btnReport').onclick = () => {
+  const st = S.stats, ck = S.checkins.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+  const recent = ck.slice(-14);
+  const avgReal = recent.length ? recent.reduce((s, c) => s + c.mood, 0) / recent.length : 0;
+  const tagCount = {}; recent.forEach(c => c.tags.forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
+  const topTags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const fights = (tagCount['吵架了'] || 0) + (tagCount['冷战中'] || 0);
+  const avgRecover = st.recoverSlots.length ? st.recoverSlots.reduce((a, b) => a + b, 0) / st.recoverSlots.length : 0;
+  const bestMethod = Object.entries(st.wins).sort((a, b) => b[1] - a[1])[0];
+  const topReason = Object.entries(st.reasons).sort((a, b) => b[1] - a[1])[0];
+
+  // 情缘指数：现实记事占六成，仙界表现占四成
+  const gameScore = clamp(S.mood * 0.4 + S.aff * 0.3 + (st.quarrels ? st.reconciled / st.quarrels : 1) * 30 - st.cold * 5, 0, 100);
+  const realScore = recent.length ? clamp((avgReal - 1) / 4 * 100 - fights * 4 + (tagCount['和好了'] || 0) * 3, 0, 100) : null;
+  const health = Math.round(realScore === null ? gameScore : realScore * 0.6 + gameScore * 0.4);
+  const verdict = health >= 80 ? '琴瑟和鸣 · 正值甜蜜，好好珍惜' : health >= 60 ? '相敬如宾 · 大体安稳，偶有摩擦亦属寻常' : health >= 40 ? '磨合之期 · 近来有些起伏，多些沟通与陪伴' : '需要关怀 · 或许正处低谷，寻个时机好好谈谈';
+
+  const tips = [];
+  if (!recent.length) tips.push('尚无凡尘记事。每日记上一笔，情缘录会更准确');
+  if (tagCount['很想TA'] >= 3 || tagCount['异地']) tips.push('近来思念颇多，不妨约一次视频，或寄去一份小惊喜');
+  if (tagCount['工作压力大'] >= 2 || tagCount['有点累'] >= 2) tips.push('近来疲惫，比起讲道理，一个拥抱与倾听更有用');
+  if (fights >= 2) tips.push('近来争执偏多，争执之后先说「我在乎你」，再谈事情本身');
+  if (tagCount['冷战中']) tips.push('冷战愈久愈难开口，主动一句「我们谈谈吧」便是好的开始');
+  if (topReason && topReason[0] === 'neglect') tips.push('仙界中TA最常因「被冷落」而不快，现实里也留意陪伴的时间');
+  if (st.wrong > st.reconciled && st.quarrels >= 2) tips.push('你常猜错TA不快的缘由，不妨先问一句「是什么让你难受了？」');
+  if (bestMethod) tips.push(`对TA最有效的哄法是「${METHODS[bestMethod[0]].t}」，请记在心上`);
+  if (!tips.length) tips.push('一切安好。纪念之日，记得为TA备一份心意');
+
+  const body = `
+    <div class="health"><div class="score">${health}</div><div><b>情缘指数</b><br><span style="font-size:14px">${verdict}</span></div></div>
+    <p class="note">综合近十四日凡尘记事（六成）与仙界表现（四成），仅供参考，真心感受最重要。</p>
+
+    <div class="sec">凡尘近况 · 近十四日</div>
+    <div class="stats">
+      <div class="stat"><b>${ck.length}</b><span>累计记事</span></div>
+      <div class="stat"><b>${recent.length ? MOOD_CH[Math.round(avgReal) - 1] : '—'}</b><span>平均感受</span></div>
+      <div class="stat"><b>${fights}</b><span>争执 / 冷战</span></div>
+    </div>
+    ${topTags.length ? `<div class="tags">${topTags.map(([t, c]) => `<span class="tag">${t} ×${c}</span>`).join('')}</div>` : ''}
+    ${recent.filter(c => c.note).slice(-3).reverse().map(c => `<p style="font-size:14px">「${esc(c.note)}」<span class="note"> — ${c.date}</span></p>`).join('')}
+    <div class="sec">凡尘感受走势</div>
+    ${lineChart([{ data: recent.map(c => c.mood), max: 5, color: '#b23a2e' }])}
+
+    <div class="sec">仙界之中</div>
+    <div class="stats">
+      <div class="stat"><b>${S.day}</b><span>相伴日数</span></div>
+      <div class="stat"><b>${st.quarrels}</b><span>动气次数</span></div>
+      <div class="stat"><b>${st.reconciled}</b><span>冰释前嫌</span></div>
+      <div class="stat"><b>${st.cold}</b><span>冷战次数</span></div>
+      <div class="stat"><b>${st.recoverSlots.length ? avgRecover.toFixed(1) : '—'}</b><span>平均和好(时辰)</span></div>
+      <div class="stat"><b>${S.tacit}</b><span>默契</span></div>
+      <div class="stat"><b>${st.dates}</b><span>同游</span></div>
+      <div class="stat"><b>${st.gifts}</b><span>赠礼</span></div>
+      <div class="stat"><b>${st.intim}</b><span>温存</span></div>
+    </div>
+    ${topReason ? `<p style="font-size:14px">TA最常动气的缘由：<b style="color:var(--ver2)">${REASONS[topReason[0]].label.replace(/^我|^你/, '')}</b></p>` : ''}
+    <div class="sec">心绪与情缘走势</div>
+    <div class="legend"><span><i style="background:#c9a24e"></i>心绪</span><span><i style="background:#b23a2e"></i>情缘</span></div>
+    ${lineChart([{ data: S.history.map(h => h.mood), max: 100, color: '#c9a24e' }, { data: S.history.map(h => h.aff), max: 100, color: '#b23a2e' }])}
+
+    <div class="sec">锦囊</div>
+    <ul class="tips">${tips.map(t => `<li>${t}</li>`).join('')}</ul>`;
+  modal(`${esc(S.me)} 与 ${esc(S.ta)} · 情缘录`, body, [{ t: '记下今日凡尘', fn: doCheckin }]);
+};
+
+/* ================= 背景音乐（YouTube 嵌入） ================= */
+const BGM = [
+  { id: 'G8oh2GZzBRw', name: '想某人（合唱版）· 白嘉峻 / 王优秀' },
+  { id: 'pFEy5PwQJ2w', name: '放慢脚步听一听夏天的风 · 白云儿' },
+  { id: 'LfrF_KbbPIY', name: '慢慢后退 · YuzongLay' },
+  { id: '2nXPqrL9LrY', name: 'Reason · Jeong Il Young' },
+  { id: 'AOxh-8n_j1U', name: '叫你一声 my love · 白兰的' },
+];
+// TA生气/冷战时切换的伤感曲
+const BGM_SAD = [
+  { id: 'SyAeCc0kXPI', name: '听说你身边有了新的谁' },
+  { id: 'e84vzSj_k84', name: '出界 · Lily' },
+  { id: '9-E3QzJ8NaY', name: '香水有毒 · 林夏' },
+];
+// 大婚时播放
+const BGM_WEDDING = [{ id: 'VtzSlrc65nc', name: 'Beautiful in White · Westlife' }];
+// 小游戏时播放
+const BGM_PLAY = [{ id: '98tbf8S7ITY', name: 'Tiki Tiki Tam Tam · Lyx' }];
+// 子时（夜晚）播放
+const BGM_NIGHT = [
+  { id: 'znX5F09ysr0', name: '月亮代表我的心 · 邓丽君' },
+  { id: 'cVGg8LIr2JE', name: 'Wonderful Tonight · Eric Clapton' },
+];
+const ALL_BGM = [...BGM, ...BGM_SAD, ...BGM_WEDDING, ...BGM_PLAY, ...BGM_NIGHT];
+let musicOverride = null;
+const MUSIC_KEY = 'cloudlove_music';
+let ytPlayer = null, ytReady = false, wantMusic = true, musicMode = 'normal';
+try { wantMusic = localStorage.getItem(MUSIC_KEY) !== 'off'; } catch (e) {}
+window.onYouTubeIframeAPIReady = () => {
+  ytPlayer = new YT.Player('yt', {
+    videoId: BGM[0].id,
+    playerVars: { loop: 1, playlist: BGM.map(b => b.id).join(','), controls: 0, modestbranding: 1, playsinline: 1, rel: 0 },
+    events: {
+      onReady: () => { ytReady = true; ytPlayer.setVolume(45); if (S) updateMusicMode(); syncMusic(); },
+      onStateChange: e => {
+        if (e.data === YT.PlayerState.PLAYING) {
+          if (!wantMusic) ytPlayer.pauseVideo();
+          const id = (ytPlayer.getVideoData() || {}).video_id, cur = ALL_BGM.find(b => b.id === id);
+          if (cur) $('#music .cap').textContent = '♪ ' + cur.name;
+        }
+      },
+    },
+  });
+};
+$('#music .cap').onclick = () => { if (ytReady) { ytPlayer.nextVideo(); toast('换一首'); } };
+// 情绪配乐：生气/冷战 → 伤感曲；和好 → 回到歌单
+function updateMusicMode() {
+  const mode = musicOverride || (!S ? 'normal' : (S.reason || S.emotion === 'cold') ? 'sad' : S.time === 3 ? 'night' : 'normal');
+  if (mode === musicMode || !ytReady) { musicMode = mode; return; }
+  musicMode = mode;
+  const ids = ({ sad: BGM_SAD, wedding: BGM_WEDDING, play: BGM_PLAY, night: BGM_NIGHT }[mode] || BGM).map(b => b.id);
+  // 没在播放时 loadPlaylist 会被自动播放拦截而失效，改为只排好队
+  const apply = () => {
+    ytPlayer.getPlayerState() === YT.PlayerState.PLAYING ? ytPlayer.loadPlaylist(ids, 0) : ytPlayer.cuePlaylist(ids, 0);
+    ytPlayer.setLoop(true);
+  };
+  apply();
+  // 播放器尚在加载时指令可能被忽略，稍后核对一次
+  setTimeout(() => { const pl = ytPlayer.getPlaylist() || []; if (musicMode === mode && pl[0] !== ids[0]) apply(); }, 1500);
+}
+(() => { const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
+function syncMusic() {
+  $('#btnMusic').classList.toggle('muted', !wantMusic);
+  $('#music').classList.toggle('off', !wantMusic);
+  if (!ytReady) return;
+  if (wantMusic) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+}
+$('#btnMusic').onclick = () => {
+  // 浏览器拦了自动播放时，第一次点击是「开始播放」而不是关闭
+  if (wantMusic && ytReady && ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) { ytPlayer.playVideo(); toast('♪ 乐声起'); return; }
+  wantMusic = !wantMusic;
+  try { localStorage.setItem(MUSIC_KEY, wantMusic ? 'on' : 'off'); } catch (e) {}
+  syncMusic(); toast(wantMusic ? '♪ 乐声起' : '乐声暂歇');
+};
+
+/* ================= 开篇 ================= */
+function showSetup() {
+  const saved = load();
+  let meRole = 'm', taRole = 'f';
+  $('#setup').innerHTML = `<div class="card">
+    <div class="title">云上人间</div><div class="sub">九重天上 · 与君共度一生</div>
+    ${saved ? `<button class="opt primary" id="cont" style="width:100%">续前缘：${esc(saved.me)} 与 ${esc(saved.ta)} · 第${cn(saved.day)}日</button><p class="note" style="text-align:center">或另起一段仙缘</p>` : ''}
+    <label class="lb">你的仙名</label><input type="text" id="inMe" maxlength="8" placeholder="如：云霁">
+    <div class="roles" id="rMe"><button data-r="m" class="on">仙君</button><button data-r="f">仙子</button></div>
+    <label class="lb">TA的仙名</label><input type="text" id="inTa" maxlength="8" placeholder="如：星瑶">
+    <div class="roles" id="rTa"><button data-r="f" class="on">仙子</button><button data-r="m">仙君</button></div>
+    <button class="opt primary" id="start" style="width:100%;margin-top:6px">入　仙　缘</button></div>`;
+  const pick = (id, set) => $(id).querySelectorAll('button').forEach(b => b.onclick = () => {
+    $(id).querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); set(b.dataset.r);
+  });
+  pick('#rMe', v => meRole = v); pick('#rTa', v => taRole = v);
+  if (saved) $('#cont').onclick = () => { S = saved; $('#setup').remove(); render(); syncMusic(); };
+  $('#start').onclick = () => {
+    if (saved && !confirm('另起仙缘将覆盖先前的记录，确定吗？')) return;
+    S = newState($('#inMe').value.trim() || '云霁', $('#inTa').value.trim() || '星瑶', meRole, taRole);
+    $('#setup').remove(); render(); syncMusic(); opening();
+  };
+}
+function opening() {
+  modal('初遇', `<p>你自云栖台醒来，前尘尽忘。朱红廊桥的尽头，一道身影正凭栏远眺，衣袂随风轻扬……</p><p>你决定：</p>`, [
+    { t: '缓步上前，与TA并肩看云', fn: () => meet('你们并肩而立，谁也没有说话。良久，TA侧过脸来，轻轻一笑。', '你也喜欢这片云海？') },
+    { t: '拾起TA遗落的琉璃步摇，双手奉还', fn: () => meet('TA接过步摇，指尖与你轻轻一触，微微一怔。', '多谢……你是新来的？') },
+    { t: '仙雨忽至，撑伞为TA遮雨', fn: () => meet('雨声淅沥，伞下方寸之间，你们离得很近。', '这雨……怕是一时停不了了。') },
+  ], true);
+}
+function meet(text, line) {
+  modal('初遇', `<p>${text}</p>`, [{ t: '开始', cls: 'primary', fn: () => {
+    closeModal(); change(5, 5); say(line); log(`你与${S.ta}初遇于朱红廊桥`);
+    setTimeout(() => toast('多与TA叙话，情缘至二十便会「倾心」'), 1600);
+    render(); save();
+  } }], true);
+}
+
+/* ================= 仙境（Canvas） ================= */
+const cv = $('#sky'), cx = cv.getContext('2d');
+let W, H, sceneRect = { top: 100, bottom: 400, left: 0 };
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const rgb = (c, a = 1) => `rgba(${c.map(Math.round).join(',')},${a})`;
+const SKY = [['#35609f', '#f3d2b2'], ['#164a9a', '#a7d3f4'], ['#2a2c70', '#f0a07e'], ['#050a22', '#202c5c']].map(p => p.map(hex));
+const SUN = [[.2, .3], [.62, .16], [.82, .34], [.72, .17]];
+let cur = { top: SKY[1][0], bot: SKY[1][1], night: 0, sx: .62, sy: .16 };
+const stars = Array.from({ length: 150 }, () => ({ x: Math.random(), y: Math.random() * .55, r: Math.random() * 1.3 + .3, p: Math.random() * 6 }));
+const wisps = Array.from({ length: 6 }, () => ({ x: Math.random(), y: .12 + Math.random() * .22, w: 80 + Math.random() * 120, v: .002 + Math.random() * .004 }));
+const cranes = Array.from({ length: 5 }, (_, i) => ({ x: Math.random(), y: .18 + Math.random() * .18, s: .6 + Math.random() * .6, v: .012 + Math.random() * .01, p: Math.random() * 6 }));
+const fallP = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), vx: .02 + Math.random() * .03, vy: .03 + Math.random() * .04, r: Math.random() * 6, s: 2.5 + Math.random() * 2.5 }));
+const PEAKS = [{ x: .1, w: .2, h: .2, pav: true }, { x: .86, w: .24, h: .26 }, { x: .58, w: .09, h: .1 }, { x: .34, w: .07, h: .07 }];
+
+function frame(ts) {
+  const t = ts / 1000, k = 0.03, ti = S ? S.time : 1;
+  cur.top = mix(cur.top, SKY[ti][0], k); cur.bot = mix(cur.bot, SKY[ti][1], k);
+  cur.night += ((ti === 3 ? 1 : ti === 2 ? .3 : 0) - cur.night) * k;
+  cur.sx += (SUN[ti][0] - cur.sx) * k; cur.sy += (SUN[ti][1] - cur.sy) * k;
+  sceneRect = $('#scene').getBoundingClientRect();
+  const iy = sceneRect.bottom - 24;                                   // 白玉台面
+  const hz = sceneRect.top + (iy - sceneRect.top) * .42;              // 云海地平线
+  const n = cur.night;
+
+  const g = cx.createLinearGradient(0, 0, 0, hz + 40); g.addColorStop(0, rgb(cur.top)); g.addColorStop(1, rgb(cur.bot));
+  cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+
+  if (n > .05) stars.forEach(s => {
+    cx.fillStyle = `rgba(255,250,230,${n * (.45 + .55 * Math.sin(t * 2 + s.p))})`;
+    cx.beginPath(); cx.arc(s.x * W, s.y * hz, s.r, 0, Math.PI * 2); cx.fill();
+  });
+
+  // 日 / 月
+  const bx = cur.sx * W, by = sceneRect.top * .2 + cur.sy * hz, br = 26;
+  const bodyCol = mix(hex('#fff4c4'), hex('#f2efff'), n);
+  const glow = cx.createRadialGradient(bx, by, br * .4, bx, by, br * 5);
+  glow.addColorStop(0, rgb(bodyCol, .6)); glow.addColorStop(1, rgb(bodyCol, 0));
+  cx.fillStyle = glow; cx.beginPath(); cx.arc(bx, by, br * 5, 0, Math.PI * 2); cx.fill();
+  cx.fillStyle = rgb(bodyCol); cx.beginPath(); cx.arc(bx, by, br, 0, Math.PI * 2); cx.fill();
+
+  // 高空薄云
+  const cloudCol = mix(mix(hex('#ffffff'), cur.bot, .18), hex('#56608f'), n * .75);
+  wisps.forEach(w => {
+    w.x += w.v / 60; if (w.x > 1.3) w.x = -.3;
+    cx.fillStyle = rgb(cloudCol, .35);
+    cx.beginPath(); cx.ellipse(w.x * W, w.y * hz, w.w, 7, 0, 0, Math.PI * 2); cx.fill();
+    cx.beginPath(); cx.ellipse(w.x * W + w.w * .4, w.y * hz + 6, w.w * .6, 5, 0, 0, Math.PI * 2); cx.fill();
+  });
+
+  // 远处浮空仙山
+  const peakCol = mix(mix(cur.bot, hex('#5f74a8'), .55), hex('#141a3a'), n * .6);
+  PEAKS.forEach(p => drawPeak(p.x * W, hz + 6, p.w * W, p.h * (iy - sceneRect.top) * 2.2, peakCol, p.pav));
+
+  // 仙鹤
+  cranes.forEach(c => {
+    c.x += c.v / 60; if (c.x > 1.1) { c.x = -.1; c.y = .15 + Math.random() * .2; }
+    const x = c.x * W, y = sceneRect.top + c.y * (hz - sceneRect.top) + Math.sin(t + c.p) * 4, s = 7 * c.s, f = Math.sin(t * 5 + c.p) * 4 * c.s;
+    cx.strokeStyle = n > .5 ? 'rgba(230,230,255,.7)' : 'rgba(30,32,52,.65)'; cx.lineWidth = 1.4;
+    cx.beginPath(); cx.moveTo(x - s, y - f); cx.quadraticCurveTo(x - s * .4, y - 2, x, y); cx.quadraticCurveTo(x + s * .4, y - 2, x + s, y - f); cx.stroke();
+  });
+
+  // 云海：由远及近
+  const rows = 7;
+  for (let r = 0; r < rows; r++) {
+    const q = r / (rows - 1), y = hz + (iy - hz) * Math.pow(q, 1.5) - 6;
+    const rad = 10 + q * 46, col = mix(mix(cloudCol, cur.bot, (1 - q) * .45), hex('#ffffff'), q * .25 * (1 - n));
+    seaRow(y, r, rad, rgb(col, .7 + q * .3), t);
+  }
+
+  drawPillarAndEave(iy, t);
+  drawTerrace(iy);
+
+  // 飘落花瓣
+  cx.fillStyle = n > .5 ? 'rgba(255,200,220,.6)' : 'rgba(255,185,205,.9)';
+  fallP.forEach(p => {
+    p.x += p.vx / 60; p.y += p.vy / 60; p.r += .02;
+    if (p.y > 1 || p.x > 1.05) { p.y = -.02; p.x = Math.random() * .7; }
+    cx.save(); cx.translate(p.x * W, p.y * H); cx.rotate(p.r); cx.beginPath(); cx.ellipse(0, 0, p.s, p.s * .55, 0, 0, Math.PI * 2); cx.fill(); cx.restore();
+  });
+
+  $('#pet').style.left = (W / 2 - sceneRect.left + 70) + 'px';
+  requestAnimationFrame(frame);
+}
+function seaRow(y, r, rad, col, t) {
+  cx.fillStyle = col; cx.beginPath();
+  const step = rad * 1.25;
+  for (let x = -rad * 2 + ((t * (4 + r * 3)) % step); x < W + rad * 2; x += step) {
+    const yy = y + Math.sin(x * .02 + r * 1.7 + t * .3) * rad * .18, rr = rad * (.85 + .25 * Math.sin(x * .05 + r));
+    cx.moveTo(x + rr, yy); cx.arc(x, yy, rr, 0, Math.PI * 2);
+  }
+  cx.rect(-10, y, W + 20, H); cx.fill();
+}
+function drawPeak(x, base, w, h, col, pav) {
+  cx.fillStyle = rgb(col, .9); cx.beginPath();
+  cx.moveTo(x - w / 2, base);
+  cx.lineTo(x - w * .3, base - h * .55); cx.lineTo(x - w * .12, base - h * .7); cx.lineTo(x, base - h);
+  cx.lineTo(x + w * .14, base - h * .62); cx.lineTo(x + w * .3, base - h * .5); cx.lineTo(x + w / 2, base);
+  cx.quadraticCurveTo(x, base + h * .45, x - w / 2, base); cx.fill();
+  if (pav) {
+    const px = x - w * .02, py = base - h * .98, lit = S && S.stage >= 3;
+    cx.fillStyle = '#8f2a22'; cx.fillRect(px - 6, py - 8, 12, 8);
+    cx.fillStyle = '#2b2f3f'; cx.beginPath(); cx.moveTo(px - 11, py - 7); cx.quadraticCurveTo(px, py - 18, px + 11, py - 7); cx.fill();
+    if (lit || cur.night > .5) { cx.fillStyle = 'rgba(255,214,120,.9)'; cx.fillRect(px - 2, py - 6, 4, 4); }
+  }
+}
+function drawPillarAndEave(iy, t) {
+  const n = cur.night * .6, ey = Math.max(sceneRect.top + 4, 70), ew = W * .5;
+  const red = rgb(mix(hex('#a3302a'), hex('#4a1a22'), n)), gold = '#d6b15e';
+  // 朱红柱
+  cx.fillStyle = red; cx.fillRect(W * .035, ey, 16, iy - ey);
+  cx.fillStyle = gold; cx.fillRect(W * .035 - 2, ey + 14, 20, 4); cx.fillRect(W * .035 - 2, iy - 26, 20, 4);
+  // 飞檐
+  cx.fillStyle = red; cx.fillRect(0, ey - 4, ew, 11);
+  cx.fillStyle = gold; cx.fillRect(0, ey + 7, ew, 2);
+  cx.fillStyle = rgb(mix(hex('#2c3042'), hex('#12141f'), n));
+  cx.beginPath(); cx.moveTo(-10, ey - 40); cx.lineTo(ew * .9, ey - 22);
+  cx.quadraticCurveTo(ew * 1.02, ey - 22, ew * 1.08, ey - 44); cx.quadraticCurveTo(ew * 1.02, ey - 4, ew * .88, ey - 3); cx.lineTo(-10, ey - 4); cx.fill();
+  cx.strokeStyle = gold; cx.lineWidth = 1.5; cx.beginPath(); cx.moveTo(-10, ey - 4); cx.lineTo(ew * .88, ey - 3); cx.quadraticCurveTo(ew * 1.02, ey - 4, ew * 1.08, ey - 44); cx.stroke();
+  // 樱花
+  const bloom = rgb(mix(hex('#ffc2d4'), hex('#8d7aa8'), n), .95), bloom2 = rgb(mix(hex('#ff9fbb'), hex('#6c5a8a'), n), .95);
+  for (let i = 0; i < 26; i++) {
+    const bx = (i * 37 % 100) / 100 * ew * 1.05, by = ey + 8 + ((i * 53) % 45) + Math.sin(t + i) * 1.5;
+    cx.fillStyle = i % 3 ? bloom : bloom2; cx.beginPath(); cx.arc(bx, by, 7 + (i % 4) * 2, 0, Math.PI * 2); cx.fill();
+  }
+  // 灯笼：夜晚或大婚时点亮
+  if (cur.night > .4 || (S && S.stage >= 4)) {
+    [[ew * .55, ey + 28], [ew * .9, ey + 20]].forEach(([lx, ly]) => {
+      const sw = Math.sin(t * 1.4 + lx) * 2;
+      cx.strokeStyle = gold; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(lx, ey + 7); cx.lineTo(lx + sw, ly - 10); cx.stroke();
+      const lg = cx.createRadialGradient(lx + sw, ly, 2, lx + sw, ly, 40); lg.addColorStop(0, 'rgba(255,170,90,.55)'); lg.addColorStop(1, 'rgba(255,170,90,0)');
+      cx.fillStyle = lg; cx.beginPath(); cx.arc(lx + sw, ly, 40, 0, Math.PI * 2); cx.fill();
+      cx.fillStyle = '#d23a2a'; cx.beginPath(); cx.ellipse(lx + sw, ly, 9, 12, 0, 0, Math.PI * 2); cx.fill();
+      cx.fillStyle = gold; cx.fillRect(lx + sw - 5, ly - 13, 10, 3); cx.fillRect(lx + sw - 5, ly + 10, 10, 3);
+    });
+  }
+}
+function drawTerrace(iy) {
+  const n = cur.night * .65;
+  const fl = cx.createLinearGradient(0, iy - 8, 0, H);
+  fl.addColorStop(0, rgb(mix(hex('#f5f0e6'), hex('#3a3f5e'), n))); fl.addColorStop(1, rgb(mix(hex('#cbc2b0'), hex('#1c2038'), n)));
+  cx.fillStyle = fl; cx.fillRect(0, iy - 8, W, H);
+  cx.strokeStyle = rgb(mix(hex('#ddd3bf'), hex('#2a2e48'), n)); cx.lineWidth = 1;
+  for (let x = -W; x < W * 2; x += 46) { cx.beginPath(); cx.moveTo(W / 2 + (x - W / 2) * .5, iy - 8); cx.lineTo(x, H); cx.stroke(); }
+  // 鎏金栏杆
+  const gold = rgb(mix(hex('#d8b25e'), hex('#8a7442'), n)), white = rgb(mix(hex('#fbf8f0'), hex('#5a5f7e'), n));
+  const top = iy - 38, bot = iy - 10;
+  cx.fillStyle = white;
+  for (let x = 8; x < W; x += 11) cx.fillRect(x, top + 4, 3, bot - top - 4);
+  cx.fillStyle = gold; cx.fillRect(0, top, W, 4); cx.fillRect(0, bot - 3, W, 4);
+  for (let x = 0; x < W + 46; x += 46) {
+    cx.fillRect(x - 3, top - 6, 7, bot - top + 8);
+    cx.beginPath(); cx.arc(x + .5, top - 8, 5, 0, Math.PI * 2); cx.fill();
+  }
+  // 大婚红绸
+  if (S && S.stage >= 4) {
+    cx.strokeStyle = '#c8282e'; cx.lineWidth = 4;
+    for (let x = 0; x < W; x += 46) { cx.beginPath(); cx.moveTo(x, top + 2); cx.quadraticCurveTo(x + 23, top + 18, x + 46, top + 2); cx.stroke(); }
+  }
+}
+
+resize(); requestAnimationFrame(frame); showSetup();
+</script>
+</body>
+</html>
