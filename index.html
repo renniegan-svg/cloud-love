@@ -41,10 +41,19 @@
 
   /* Scene */
   #scene{flex:1;position:relative;min-height:220px}
-  #chars{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;align-items:flex-end;gap:0}
-  .char .nm{position:relative;left:-14px}
+  #chars{position:absolute;left:0;right:0;bottom:16px;height:220px;pointer-events:none}
+  .char .nm{position:relative;left:-14px;transition:opacity .3s}
+  .char.close .nm{opacity:0}
   .char .bubble{left:40%}
-  .char{position:relative;text-align:center}
+  .emote{position:absolute;left:40%;top:-6px;font-size:24px;pointer-events:none;animation:emo 1.8s ease-out forwards;z-index:3}
+  @keyframes emo{0%{opacity:0;transform:translate(-50%,10px) scale(.5)}20%{opacity:1;transform:translate(-50%,0) scale(1.15)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-34px)}}
+  .mark{position:absolute;bottom:10px;width:30px;height:10px;border:2px solid var(--gold2);border-radius:50%;pointer-events:none;animation:mark .8s ease-out forwards}
+  @keyframes mark{from{opacity:1;transform:scale(.4)}to{opacity:0;transform:scale(1.6)}}
+  #quick{position:absolute;bottom:236px;display:flex;gap:6px;z-index:4}
+  #quick button{border:1px solid var(--gold2);background:rgba(12,18,44,.88);color:var(--txt);border-radius:6px;padding:6px 8px;font-family:inherit;font-size:12px;letter-spacing:.1em;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,.35)}
+  #quick button b{color:var(--gold2);font-size:16px}
+  .char{position:absolute;left:0;bottom:0;width:140px;text-align:center;pointer-events:auto;transform-origin:56px 100%;will-change:transform;cursor:pointer}
+  #meFig,#taFig{transform-origin:40% 50%}
   .fig{width:140px;height:182px;display:block;filter:drop-shadow(0 6px 8px rgba(0,0,0,.28))}
   .char .nm{display:inline-block;margin-top:2px;font-size:12px;color:var(--gold2);background:rgba(12,18,44,.65);border:1px solid rgba(201,162,78,.5);padding:0 8px;border-radius:3px;letter-spacing:.2em}
   .char .emo{position:absolute;top:8px;left:84px;width:26px;height:26px;background:var(--ver);color:#fff;border:1px solid var(--gold2);border-radius:4px;
@@ -170,7 +179,7 @@
 
   <section id="scene">
     <div id="chars">
-      <div class="char me"><div id="meFig"></div><div class="nm" id="meNm">我</div></div>
+      <div class="char me" id="meChar"><div id="meFig"></div><div class="nm" id="meNm">我</div></div>
       <div class="char ta" id="taChar">
         <div class="bubble" id="bubble"></div>
         <div class="emo" id="taEmo">静</div>
@@ -178,6 +187,7 @@
       </div>
     </div>
     <div id="pet">🦊</div>
+    <div id="quick" hidden></div>
     <div id="music"><div id="yt"></div><div class="cap" title="点击换下一首">♪ 想某人（合唱版）· 白嘉峻 / 王优秀</div></div>
   </section>
 
@@ -454,6 +464,7 @@ function render() {
 function A(ic, label, fn, cls = '', disabled = false) { return { ic, label, fn, cls, disabled }; }
 function renderActions() {
   const list = [], night = S.time === 3;
+  const N = fn => () => approach(fn);   // 先走到TA身边
   const rest = A(night ? '寝' : '坐', night ? '就寝' : '静坐片刻', doRest);
   if (S.emotion === 'cold') {
     list.push(A('冷', 'TA不理你', () => toast(`${S.ta}此刻不愿说话，明日再试吧`), 'warn'));
@@ -461,28 +472,164 @@ function renderActions() {
     if (S.pet) list.push(A('狐', '逗弄雪团', doPet));
     list.push(rest);
   } else if (S.reason) {
-    list.push(A('哄', S.guessed ? '继续哄TA' : '问TA何事', coax, 'warn'));
+    list.push(A('哄', S.guessed ? '继续哄TA' : '问TA何事', N(coax), 'warn'));
     list.push(A('值', '天庭当值', doWork));
     list.push(A(night ? '寝' : '坐', '让TA静一静', doRest));
   } else {
-    list.push(A('叙', '叙话', doChat));
-    list.push(A('宝', '珍宝阁', doShop));
+    list.push(A('叙', '叙话', N(doChat)));
+    list.push(A('宝', '珍宝阁', N(doShop)));
     if (S.stage >= 1) list.push(A('游', '同游', doDate));
-    if (S.stage >= 1) list.push(A('情', '温存', doIntim));
-    if (S.stage >= 1) list.push(A('灵', S.today.quiz ? '明日再问' : '心有灵犀', doQuiz, '', S.today.quiz));
+    if (S.stage >= 1) list.push(A('情', '温存', N(doIntim)));
+    if (S.stage >= 1) list.push(A('灵', S.today.quiz ? '明日再问' : '心有灵犀', N(doQuiz), '', S.today.quiz));
     list.push(A('值', '天庭当值', doWork));
     if (S.pet) list.push(A('狐', '逗弄雪团', doPet, '', S.today.pet));
     const nx = STAGES[S.stage + 1];
-    if (nx && nx.event && S.aff >= nx.need) list.push(A(nx.ic, nx.event, doMilestone, 'hl'));
+    if (nx && nx.event && S.aff >= nx.need) list.push(A(nx.ic, nx.event, N(doMilestone), 'hl'));
     list.push(rest);
   }
   list.push(A('记', todayChecked() ? '今日已记' : '凡尘记事', doCheckin, todayChecked() ? '' : 'hl'));
   const box = $('#actions'); box.innerHTML = '';
   list.forEach(a => {
     const b = document.createElement('button'); b.className = 'act ' + a.cls; b.disabled = a.disabled;
-    b.innerHTML = `<span class="ic">${a.ic}</span>${a.label}`; b.onclick = a.fn; box.appendChild(b);
+    b.innerHTML = `<span class="ic">${a.ic}</span>${a.label}`; b.onclick = () => { if (!busy) a.fn(); }; box.appendChild(b);
   });
 }
+
+/* ================= 角色走动 ================= */
+const BODY_X = 56;  // 身体在 140px 立绘里的中心
+const mkActor = (x, speed) => ({ el: null, fig: null, x, tx: x, speed, face: 1, lean: 0, tlean: 0, cb: null, walking: false, faceLock: 0, bounceUntil: 0, nextThink: 0 });
+const actors = { me: mkActor(110, 110), ta: mkActor(250, 80) };
+const pet = { x: 60 };
+let busy = false, busyT = 0, lastTs = 0, sceneW = 375, actorsPlaced = false;
+
+function moveTo(a, x, speed, cb) {
+  a.tx = clamp(x, -130, sceneW + 130); if (speed) a.speed = speed; a.cb = cb || null;
+  if (Math.abs(a.tx - a.x) < 2 && cb) { a.cb = null; setTimeout(cb, 0); }
+}
+const edgeX = x => clamp(x, 50, sceneW - 50);
+// 走到TA身边再做事
+function approach(cb, dist = 62) {
+  const { me, ta } = actors;
+  ta.tx = ta.x; ta.cb = null; ta.nextThink = performance.now() + 8000;
+  const side = me.x <= ta.x ? -1 : 1;
+  let x = ta.x + side * dist;
+  if (x < 40 || x > sceneW - 40) x = ta.x - side * dist;
+  busy = true;
+  moveTo(me, x, 230, () => { busy = false; cb && cb(); });
+}
+function emote(a, ch) {
+  if (!a.el) return;
+  const s = document.createElement('div'); s.className = 'emote'; s.textContent = ch;
+  a.el.appendChild(s); setTimeout(() => s.remove(), 1800);
+}
+// 牵手 / 相拥 / 轻吻 / 倚肩
+function pose(kind, ms = 2600) {
+  const { me, ta } = actors, side = me.x <= ta.x ? 1 : -1;
+  const gap = { hand: 46, hug: 30, kiss: 28, star: 40 }[kind] || 46;
+  busy = true; ta.tx = ta.x; ta.cb = null; ta.nextThink = performance.now() + ms + 3000;
+  moveTo(me, ta.x - side * gap, 160, () => {
+    me.faceLock = side; ta.faceLock = -side;
+    if (kind === 'hand') me.bounceUntil = ta.bounceUntil = performance.now() + ms;
+    else if (kind === 'star') { me.faceLock = ta.faceLock = 1; me.tlean = side * 5; ta.tlean = -side * 5; }
+    else { me.tlean = side * 8; ta.tlean = -side * 8; }
+    setTimeout(() => { me.tlean = ta.tlean = 0; me.faceLock = ta.faceLock = 0; busy = false; }, ms);
+  });
+}
+// 走出画面再走回来（上班、同游）
+function walkOffAndBack(who, dir, text) {
+  busy = true;
+  const off = dir > 0 ? sceneW + 110 : -110, back = dir > 0 ? -110 : sceneW + 110;
+  let n = who.length;
+  who.forEach((k, i) => moveTo(actors[k], off + i * dir * 40, 170, () => {
+    if (--n) return;
+    const comeBack = () => {
+      let m = who.length;
+      who.forEach((k2, j) => {
+        actors[k2].x = back - j * dir * 40;
+        moveTo(actors[k2], sceneW * (0.36 + j * 0.24), 150, () => { if (!--m) busy = false; });
+      });
+    };
+    text ? fade(text, comeBack) : setTimeout(comeBack, 900);
+  }));
+}
+function reconcile() {
+  const { me, ta } = actors; busy = true;
+  moveTo(ta, me.x + (ta.x >= me.x ? 34 : -34), 220, () => { busy = false; emote(ta, '💗'); pose('hug', 2200); });
+}
+// TA按心情自己行动
+function think(now) {
+  const { me, ta } = actors, e = S.emotion;
+  let next = 4000 + Math.random() * 3000;
+  ta.faceLock = 0;
+  if (S.reason || e === 'cold') {
+    const far = me.x < sceneW / 2 ? sceneW - 60 : 60;
+    moveTo(ta, far + Math.random() * 40 - 20, 90);
+    ta.faceLock = far > sceneW / 2 ? 1 : -1;   // 背对你
+    if (Math.random() < .5) emote(ta, e === 'cold' ? '🧊' : e === 'sad' ? '💧' : '💢');
+  } else if (e === 'happy' || e === 'shy') {
+    moveTo(ta, edgeX(me.x + (ta.x >= me.x ? 1 : -1) * 64), 100);
+    if (Math.random() < .35) emote(ta, rand(['💗', '🎵', '✨']));
+  } else if (e === 'down') {
+    moveTo(ta, edgeX(Math.random() < .5 ? 70 : sceneW - 70), 50); next = 7000;
+    if (Math.random() < .4) emote(ta, '💧');
+  } else {
+    if (Math.random() < .55) moveTo(ta, edgeX(sceneW * (.2 + Math.random() * .6)), 70);
+    else moveTo(ta, edgeX(me.x + (ta.x >= me.x ? 1 : -1) * 90), 80);
+    if (Math.random() < .2) emote(ta, rand(['🎵', '🌸']));
+  }
+  ta.nextThink = now + next;
+}
+function updateActors(ts) {
+  const dt = Math.min(.05, (ts - lastTs) / 1000 || 0); lastTs = ts;
+  sceneW = sceneRect.width || 375;
+  const { me, ta } = actors;
+  if (!me.el) { me.el = $('#meChar'); me.fig = $('#meFig'); ta.el = $('#taChar'); ta.fig = $('#taFig'); }
+  if (!S) return;
+  if (!actorsPlaced) { me.x = me.tx = sceneW * .3; ta.x = ta.tx = sceneW * .7; pet.x = me.x - 50; actorsPlaced = true; }
+  if (busy) { busyT = busyT || ts; if (ts - busyT > 12000) busy = false; } else busyT = 0;
+  if (!busy && $('#modal').hidden && ts > ta.nextThink) think(ts);
+  const t = ts / 1000;
+  [me, ta].forEach(a => {
+    const other = a === me ? ta : me, d = a.tx - a.x;
+    a.walking = Math.abs(d) > 1.5;
+    if (a.walking) { a.x += Math.sign(d) * Math.min(Math.abs(d), a.speed * dt); a.face = Math.sign(d); }
+    else { if (a.cb) { const cb = a.cb; a.cb = null; cb(); } a.face = a.faceLock || (other.x >= a.x ? 1 : -1); }
+    a.lean += ((a.walking ? a.face * 3 : a.tlean) - a.lean) * .15;
+    const y = a.walking ? -Math.abs(Math.sin(t * 9)) * 5 : a.bounceUntil > ts ? -Math.abs(Math.sin(t * 7)) * 7 : 0;
+    a.el.style.transform = `translate(${(a.x - BODY_X).toFixed(1)}px,${y.toFixed(1)}px) rotate(${a.lean.toFixed(2)}deg)`;
+    a.fig.style.transform = `scaleX(${a.face})`;
+  });
+  const close = Math.abs(me.x - ta.x) < 52;   // 靠得很近时名字会叠在一起
+  me.el.classList.toggle('close', close); ta.el.classList.toggle('close', close);
+  if (S.pet) { pet.x += (me.x - me.face * 58 - pet.x) * Math.min(1, dt * 2.5); $('#pet').style.left = (pet.x - 14) + 'px'; }
+}
+// 点云台走过去，点TA直接互动
+function tapTA() {
+  const { me, ta } = actors;
+  if (S.emotion === 'cold') { emote(ta, '🧊'); toast(`${S.ta}背过身去，不想理你`); moveTo(ta, edgeX(ta.x + (ta.x >= me.x ? 70 : -70)), 120); return; }
+  approach(showQuick);
+}
+function showQuick() {
+  const q = $('#quick');
+  const items = S.reason ? [['哄', '哄TA', coax]]
+    : [['叙', '叙话', doChat], ['宝', '赠礼', doShop], ...(S.stage >= 1 ? [['情', '温存', doIntim]] : [])];
+  q.innerHTML = items.map((it, i) => `<button data-q="${i}"><b>${it[0]}</b>${it[1]}</button>`).join('');
+  q.querySelectorAll('button').forEach(b => b.onclick = e => { e.stopPropagation(); q.hidden = true; items[+b.dataset.q][2](); });
+  q.style.left = clamp(actors.ta.x - 70, 6, sceneW - 170) + 'px';
+  q.hidden = false; clearTimeout(q._t); q._t = setTimeout(() => q.hidden = true, 5000);
+}
+function marker(x) {
+  const m = document.createElement('div'); m.className = 'mark'; m.style.left = (x - 15) + 'px';
+  $('#scene').appendChild(m); setTimeout(() => m.remove(), 800);
+}
+$('#scene').addEventListener('click', e => {
+  if (!S || busy || e.target.closest('#music, #quick')) return;
+  $('#quick').hidden = true;
+  if (e.target.closest('#taChar')) return tapTA();
+  if (e.target.closest('#meChar')) return emote(actors.me, rand(['🙂', '✨', '🎵']));
+  const x = edgeX(e.clientX - sceneRect.left);
+  moveTo(actors.me, x, 120); marker(x);
+});
 
 /* ================= 核心逻辑 ================= */
 function change(aff, mood) {
@@ -526,12 +673,14 @@ function maybeAnger(trigger) {
   S.mood = Math.min(S.mood, 35);
   S.stats.quarrels++; S.stats.reasons[r] = (S.stats.reasons[r] || 0) + 1; S.stats.angerStart = slotIndex();
   setTimeout(() => say(REASONS[r].line), 300);
+  actors.ta.nextThink = 0; emote(actors.ta, '💢');
   log(`${S.ta}动了气……`);
 }
 
 /* ----- 叙话 ----- */
 function doChat() {
   S.stats.chats++;
+  emote(actors.me, '💬'); setTimeout(() => emote(actors.ta, '💬'), 700);
   const unknown = Object.keys(PREFS).filter(k => !S.known[k]);
   if (unknown.length && Math.random() < 0.45) {
     const k = rand(unknown); S.known[k] = true;
@@ -569,6 +718,7 @@ function buy(it) {
 function giveGift(it, letter) {
   S.stats.gifts++; interact();
   const fav = S.prefs[it.k] === it.n;
+  emote(actors.me, '🎁'); setTimeout(() => { emote(actors.ta, fav ? '💖' : '😊'); if (fav) actors.ta.bounceUntil = performance.now() + 1500; }, 600);
   if (fav) { S.known[it.k] = true; change(8, 25); say('你怎知我最喜欢这个？'); petals(); }
   else if (S.stage === 0) { change(2, 6); say('我们才初相识……不过，多谢。'); }
   else { change(3, 10); say(rand(['多谢你。', '是给我的？', '……我很喜欢。'])); }
@@ -586,6 +736,7 @@ function doDate() {
       const fav = S.prefs.place === pl;
       if (fav) { S.known.place = true; change(8, 25); petals(); say('这是我最爱的地方……你竟记得。'); }
       else { change(4, 12); say(rand(['今日很开心。', '下回还同你来。'])); }
+      walkOffAndBack(['me', 'ta'], 1, `${pl}<br><br>${PLACES[pl]}`);
       log(`同游${pl}：${PLACES[pl]}`);
       maybeAnger(); advance();
     }
@@ -616,6 +767,10 @@ function doIntim() {
           S.stats.intim++; interact();
           change(repeat ? 1 : o.a, repeat ? 3 : o.m);
           if (o.shy && !S.reason) S.emotion = 'shy';
+          const P = { hand: 'hand', hug: 'hug', kiss: 'kiss', star: 'star' }[o.id];
+          if (P) pose(P);
+          if (o.id === 'kiss') setTimeout(() => emote(actors.ta, '💋'), 700);
+          if (o.id === 'pat') { emote(actors.ta, '😳'); actors.ta.bounceUntil = performance.now() + 1200; }
           if (o.fade) {
             fade('红烛摇曳，纱帐轻垂……<br>窗外云海翻涌，星河流转。<br><br>这一夜，只属于你们。', () => { petals(18); say('……安歇吧。'); });
             log('红烛帐暖，一夜温柔');
@@ -635,6 +790,8 @@ function fade(html, cb) {
 /* ----- 当值 / 灵宠 / 静坐 ----- */
 function doWork() {
   const pay = 40 + S.stage * 15;
+  walkOffAndBack(['me'], -1, null);
+  if (S.stage >= 1 && S.neglect >= 1) setTimeout(() => emote(actors.ta, '😔'), 900);
   S.gold += pay; S.neglect++; S.stats.work++;
   log(`前往天庭当值，得灵石 ${pay}`);
   toast(`灵石 +${pay}`);
@@ -650,7 +807,10 @@ function doPet() {
   log('你们一同逗弄雪团');
   render(); save();
 }
-function doRest() { if (S.time === 3) log('夜深，安歇'); advance(); }
+function doRest() {
+  if (S.time === 3) { log('夜深，安歇'); emote(actors.me, '💤'); emote(actors.ta, '💤'); }
+  advance();
+}
 
 /* ----- 哄 ----- */
 function coax() {
@@ -671,6 +831,7 @@ function coax() {
           S.wrong++; S.stats.wrong++; S.mood = clamp(S.mood - 10, 0, 100);
           say(rand(['你根本不懂我。', '不是。', '……你再想想。']));
           closeModal();
+          emote(actors.ta, '💢'); actors.ta.nextThink = 0;
           if (S.wrong >= 3) { S.emotion = 'cold'; S.stats.cold++; log(`${S.ta}不愿再理你，冷战至明日`); toast('冷战开始……明日再哄吧'); }
           else toast(`猜错了（${S.wrong}/3）`);
           render(); save();
@@ -701,6 +862,7 @@ function resolveCoax(m) {
     S.mood = Math.max(S.mood, 75); change(5, 0); S.emotion = 'happy';
     say(m === 'joke' ? '……好冷的笑话。可我还是笑了。' : rand(['……这次便原谅你。', '……抱紧些。', '你呀。']));
     petals(18); log(`冰释前嫌，默契 +1（${METHODS[m].t}）`);
+    setTimeout(reconcile, 300);
   } else {
     S.mood = clamp(S.mood + 12, 0, 100);
     if (S.mood >= 55) {
@@ -754,7 +916,7 @@ function doMilestone() {
       closeModal();
       const need = nx.event === '求亲' ? 60 : 50;
       if (S.mood < need) { change(-3, -5); say('……容我再想想。'); log(`${nx.event}未成，TA此刻心绪不佳`); toast('先让TA心绪好些再说吧'); render(); save(); return; }
-      S.stage++; S.mood = 100; syncEmotion(); petals(30);
+      S.stage++; S.mood = 100; syncEmotion(); petals(30); pose('hug', 3000);
       if (nx.event === '表白心意') { say('……我也是。'); log('心意相通，你们正式结缘'); toast('解锁：相拥 · 轻吻 · 倚肩观星'); }
       if (nx.event === '同住仙居') { say('好，我们的家。'); log('你们在云海边有了一处仙居'); toast('解锁：红烛帐暖'); }
       if (nx.event === '求亲') { say('我愿意。'); log('求亲成功，九重天上大婚'); setTimeout(wedding, 1200); }
@@ -998,6 +1160,7 @@ function meet(text, line) {
   modal('初遇', `<p>${text}</p>`, [{ t: '开始', cls: 'primary', fn: () => {
     closeModal(); change(5, 5); say(line); log(`你与${S.ta}初遇于朱红廊桥`);
     setTimeout(() => toast('多与TA叙话，情缘至二十便会「倾心」'), 1600);
+    setTimeout(() => toast('点击云台可以走动 · 点TA可以直接互动'), 4800);
     render(); save();
   } }], true);
 }
@@ -1090,7 +1253,7 @@ function frame(ts) {
     cx.save(); cx.translate(p.x * W, p.y * H); cx.rotate(p.r); cx.beginPath(); cx.ellipse(0, 0, p.s, p.s * .55, 0, 0, Math.PI * 2); cx.fill(); cx.restore();
   });
 
-  $('#pet').style.left = (W / 2 - sceneRect.left + 70) + 'px';
+  updateActors(ts);
   requestAnimationFrame(frame);
 }
 function seaRow(y, r, rad, col, t) {
